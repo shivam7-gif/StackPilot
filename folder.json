@@ -1,0 +1,11 @@
+const data = [
+  {
+    name : "src",
+    type:"folder",
+    children:[
+      {name : "App.tsx",type : "file"},
+      {name : "index.tsx",type : "file"},
+    ]
+  },
+  {name : "package.json",type:"file"}
+];
