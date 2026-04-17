@@ -30,7 +30,7 @@ export const getScaffoldCommand = (
     react: `npm create vite@latest ${projectId} -- --template react-ts`,
     vue: `npm create vite@latest ${projectId} -- --template vue-ts`,
     svelte: `npm create vite@latest ${projectId} -- --template svelte-ts`,
-    astro: `npm create astro@latest ${projectId} -- --template minimal --no-install --no-git`,
+    astro: `npx create astro@latest ${projectId} -- --template minimal --no-install --no-git`,
     nextjs: `npx create-next-app@latest ${projectId} --typescript --eslint --no-tailwind --src-dir --app --yes --skip-install`,
     nuxt: `npx nuxi@latest init ${projectId} --no-install`,
     angular: `npx @angular/cli@latest new ${projectId} --routing --style=scss --skip-git --skip-install`,

@@ -3,6 +3,7 @@ import util from "util";
 import child_process from "child_process";
 import fs from "fs/promises";
 import crypto from "crypto";
+import path from "path";
 import {
   getScaffoldCommand,
   type Framework,
@@ -61,37 +62,41 @@ export const CreateProjectController = async (req: Request, res: Response) => {
     }
 
     const projectId = crypto.randomUUID();
-    
+
     const baseName = projectName.replace(/[^a-z0-9-]/gi, "-").toLowerCase();
-    const mainFolder = path.join(PROJECTS_DIR,baseName);
-    await fs.mkdir(mainFolder ,{recursive:true});
+    const mainFolder = path.join(PROJECTS_DIR, projectId);
+    // creating an main folder
+    await fs.mkdir(mainFolder, { recursive: true });
 
     // all subfolders
-    const frontendFolder = path.join(mainFolder,`${baseName}-frontend`);
-    const backendFolder = path.join(mainFolder,`${baseName}-backend`);
-    const architectFolder = path.join(mainFolder,`${baseName}-architect`);
-    const aiEngineFolder = path.join(mainFolder,`${baseName}-ai-engine`);
+    const frontendFolder = path.join(mainFolder, `${baseName}-frontend`);
+    const backendFolder = path.join(mainFolder, `${baseName}-backend`);
+    const architectFolder = path.join(mainFolder, `${baseName}-architect`);
+    const aiEngineFolder = path.join(mainFolder, `${baseName}-ai-engine`);
 
+    // pre creating only non-Scaffoled folders
     await Promise.all([
-      fs.mkdir(frontendFolder,{recursive:true}),
-      fs.mkdir(backendFolder,{recursive:true}),
-      fs.mkdir(architectFolder,{recursive:true}),
-      fs.mkdir(aiEngineFolder,{recursive:true}),
-    ])
+      fs.mkdir(architectFolder, { recursive: true }),
+      fs.mkdir(aiEngineFolder, { recursive: true }),
+    ]);
     if (frontend) {
-      const {command} = getScaffoldCommand(frontend ,".");
-      await execPromisified(command,{
-        cwd : frontendFolder,
-        timeout:300_000,
-      })
+      const { command } = getScaffoldCommand(frontend, `${baseName}-frontend`);
+      console.log("Running command : ", command);
+      console.log("In directory :", mainFolder);
+      await execPromisified(command, {
+        cwd: mainFolder,
+        timeout: 300_000,
+      });
     }
 
     if (backend) {
-      const {command} = getScaffoldCommand(backend,".");
-      await execPromisified(command,{
-        cwd : backendFolder,
-        timeout:300_000,
-      })
+      const { command } = getScaffoldCommand(backend, `${baseName}-backend`);
+      console.log("Running command : ", command);
+      console.log("In directory :", mainFolder);
+      await execPromisified(command, {
+        cwd: mainFolder,
+        timeout: 300_000,
+      });
     }
 
     return res.status(201).json({
