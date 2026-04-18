@@ -1,12 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 import { socket } from "@/config/socket";
-
+import { useRouter } from "next/navigation";
+type OverlayStep = "idle" | "creating" | "logs" | "done";
 export default function DashboardPage() {
   const [frontendFramework, setFrontendFramework] = useState("");
   const [backendFramework, setBackendFramework] = useState("");
   const [projectName, setProjectName] = useState("");
   const [logs, setLogs] = useState<string[]>([]);
+  const [overlayStep, setoverlayStep] = useState<OverlayStep>("idle");
+  const router = useRouter();
 
   useEffect(() => {
     socket.connect();
@@ -20,9 +23,24 @@ export default function DashboardPage() {
       console.log("LOG:", log);
     });
 
+    socket.on("project-step", (step: string) => {
+      if (step == "folders") setoverlayStep("creating");
+      if (step == "scaffolding") setoverlayStep("logs");
+      if (step == "done") setoverlayStep("done");
+    });
+
+    socket.on("project-done", ({ projectId }) => {
+      setoverlayStep("done");
+      setTimeout(() => {
+        router.push(`/project/${projectId}/ide`);
+      });
+    });
+
     return () => {
       socket.off("connect");
       socket.off("project-log");
+      socket.off("project-step");
+      socket.off("project-done");
       socket.disconnect();
     };
   }, []);
