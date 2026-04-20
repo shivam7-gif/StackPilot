@@ -5,8 +5,11 @@ import dynamic from "next/dynamic";
 import {BeforeMount , OnMount} from "@monaco-editor/react"
 const MIN_WIDTH = 180;
 const MAX_WIDTH = 600;
+import { useParams } from "next/navigation";
+import Editor from "../../../../components/ide/EditorPanel"
 
 export default function Ide() {
+  const {id} = useParams();
   const [fileWidth, setFileWidth] = useState(220);
   const [aiWidth, setAiWidth] = useState(420);
   const [activeAiTab, setActiveAiTab] = useState<"karma" | "linecoder">("karma");
@@ -18,98 +21,98 @@ export default function Ide() {
   const startX = useRef(0);
   const startWidth = useRef(0);
 
-  const Editor = dynamic(()=> import ("@monaco-editor/react"),{ssr : false});
-  const handleBeforeMount: BeforeMount = (monaco) => {
-  // Enable full TS/JS language features
-  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-    target: monaco.languages.typescript.ScriptTarget.ESNext,
-    allowNonTsExtensions: true,
-    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-    module: monaco.languages.typescript.ModuleKind.CommonJS,
-    noEmit: true,
-    esModuleInterop: true,
-    jsx: monaco.languages.typescript.JsxEmit.React,
-    reactNamespace: "React",
-    allowJs: true,
-    typeRoots: ["node_modules/@types"],
-  });
-  const handleMount : OnMount = (editor , monaco)=>{
+//   const Editor = dynamic(()=> import ("@monaco-editor/react"),{ssr : false});
+//   const handleBeforeMount: BeforeMount = (monaco) => {
+//   // Enable full TS/JS language features
+//   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+//     target: monaco.languages.typescript.ScriptTarget.ESNext,
+//     allowNonTsExtensions: true,
+//     moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+//     module: monaco.languages.typescript.ModuleKind.CommonJS,
+//     noEmit: true,
+//     esModuleInterop: true,
+//     jsx: monaco.languages.typescript.JsxEmit.React,
+//     reactNamespace: "React",
+//     allowJs: true,
+//     typeRoots: ["node_modules/@types"],
+//   });
+//   const handleMount : OnMount = (editor , monaco)=>{
 
-    editor.onDidChangeModelContent((event)=>{
-      const model = editor.getModel();
-      if(!model) return ;
+//     editor.onDidChangeModelContent((event)=>{
+//       const model = editor.getModel();
+//       if(!model) return ;
 
-      for(const change of event.changes){
-        if(change.text === ">"){
-          const position = editor.getPosition();
-          if(!position) continue;
+//       for(const change of event.changes){
+//         if(change.text === ">"){
+//           const position = editor.getPosition();
+//           if(!position) continue;
 
-          const lineContent = model.getLineContent(position.lineNumber);
-          const textBeforeCursor = lineContent.substring(0,position.column - 1);
+//           const lineContent = model.getLineContent(position.lineNumber);
+//           const textBeforeCursor = lineContent.substring(0,position.column - 1);
 
-          const openTagMatch = textBeforeCursor.match(/<([a-zA-Z][a-zA-Z0-9.-]*)(\s[^>]*)?\s*$/);
+//           const openTagMatch = textBeforeCursor.match(/<([a-zA-Z][a-zA-Z0-9.-]*)(\s[^>]*)?\s*$/);
 
-          if(openTagMatch){
-            const tagName = openTagMatch[1];
-            const selfClosing = new Set([
-              "area","base","br","col","embed","hr","img","input",
-            "link","meta","param","source","track","wbr"
-            ]);
+//           if(openTagMatch){
+//             const tagName = openTagMatch[1];
+//             const selfClosing = new Set([
+//               "area","base","br","col","embed","hr","img","input",
+//             "link","meta","param","source","track","wbr"
+//             ]);
 
-            if(!selfClosing.has(tagName.toLowerCase())){
-              const closingTag = `</${tagName}>`;
+//             if(!selfClosing.has(tagName.toLowerCase())){
+//               const closingTag = `</${tagName}>`;
 
-              editor.executeEdits("auto-close-tag",[
-                {
-                  range:new monaco.Range(
-                    position.lineNumber,position.column,
-                    position.lineNumber,position.column
-                  ),
-                  text: closingTag,
-                },
-              ])
-            }
-          }
-        }
-      }
-    })
-    monaco.languages.registerColorProvider("typescript",{
-      provideDocumentColors(model){
-        const matches : monaco.languages.IColorInformation[]=[];
-        const text = model.getValue();
-        const lines = text.split("\n");
+//               editor.executeEdits("auto-close-tag",[
+//                 {
+//                   range:new monaco.Range(
+//                     position.lineNumber,position.column,
+//                     position.lineNumber,position.column
+//                   ),
+//                   text: closingTag,
+//                 },
+//               ])
+//             }
+//           }
+//         }
+//       }
+//     })
+//     monaco.languages.registerColorProvider("typescript",{
+//       provideDocumentColors(model){
+//         const matches : monaco.languages.IColorInformation[]=[];
+//         const text = model.getValue();
+//         const lines = text.split("\n");
 
-        const hexRegex = /#([0-9a-fA-F]{3,8})\b/g;
+//         const hexRegex = /#([0-9a-fA-F]{3,8})\b/g;
 
-        lines.forEach((line,lineIndex)=>{
-          let match;
-          while((match = hexRegex.exec(line))!== null){
-            const hex = match[1];
-            const r = parseInt(hex.slice(0,2),16)/255;
-            const g = parseInt(hex.slice(2,4),16)/255;
-            const b = parseInt(hex.slice(4,6),16)/255;
-            const a = hex.length ===8 ? parseInt(hex.slice(6,8),16)/255 : 1;
+//         lines.forEach((line,lineIndex)=>{
+//           let match;
+//           while((match = hexRegex.exec(line))!== null){
+//             const hex = match[1];
+//             const r = parseInt(hex.slice(0,2),16)/255;
+//             const g = parseInt(hex.slice(2,4),16)/255;
+//             const b = parseInt(hex.slice(4,6),16)/255;
+//             const a = hex.length ===8 ? parseInt(hex.slice(6,8),16)/255 : 1;
 
-            matches.push({
-              color :{red : r, green : g , blue : b , alpha : a},
-              range : {
-                startLineNumber : lineIndex + 1,
-                startColumn : match.index + 1,
-                endLineNumber : lineIndex + 1,
-                endColumn : match.index + 1 + match[0].length+1,
-              }
-            })
-          }
-        })
-      }
-    })
-  }
+//             matches.push({
+//               color :{red : r, green : g , blue : b , alpha : a},
+//               range : {
+//                 startLineNumber : lineIndex + 1,
+//                 startColumn : match.index + 1,
+//                 endLineNumber : lineIndex + 1,
+//                 endColumn : match.index + 1 + match[0].length+1,
+//               }
+//             })
+//           }
+//         })
+//       }
+//     })
+//   }
 
-  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-    noSemanticValidation: false,
-    noSyntaxValidation: false,
-  });
-};
+//   monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+//     noSemanticValidation: false,
+//     noSyntaxValidation: false,
+//   });
+// };
 
   const onMouseMoveFile = useCallback((e: MouseEvent) => {
     if (!draggingFile.current) return;
@@ -164,11 +167,15 @@ export default function Ide() {
     if (!trimmed) return;
     setMessages((prev) => [...prev, { text: trimmed }]);
     setChatInput("");
+    
   };
+  console.log(id)
 
   return (
     <div className="h-screen w-screen bg-[#1a1a1a] text-white flex flex-col font-sans overflow-hidden">
-
+      <h1>
+          project Id : {id}
+        </h1>
       {/* ── Title bar ── */}
       <div className="h-11 w-full flex items-center bg-[#1e1e1e] border-b border-[#2a2a2a] shrink-0 relative select-none px-3">
         {/* macOS dots */}
@@ -204,7 +211,7 @@ export default function Ide() {
 
       {/* ── Main content ── */}
       <div className="flex flex-1 min-h-0 w-full">
-
+        
         {/* ── File Explorer ── */}
         <div className="h-full bg-[#1e1e1e] shrink-0 overflow-y-auto flex flex-col border-r border-[#2a2a2a]" style={{ width: fileWidth }}>
           <div className="px-3 py-2 text-[10px] font-semibold tracking-[0.15em] text-gray-500 uppercase border-b border-[#2a2a2a]">
@@ -230,23 +237,7 @@ export default function Ide() {
 
           {/* Editor empty state */}
           <div className="flex-1 flex items-center justify-center">
-           <Editor
-    height="100%"
-    defaultLanguage="typescript"
-    defaultValue="// Start coding..."
-    theme="vs-dark"
-    beforeMount = {handleBeforeMount}
-    options={{
-      fontSize: 13,
-      fontFamily: "JetBrains Mono, Fira Code, monospace",
-      minimap: { enabled: false },
-      scrollBeyondLastLine: false,
-      lineNumbers: "on",
-      renderLineHighlight: "line",
-      padding: { top: 12 },
-      tabSize: 2,
-    }}
-  />
+            <Editor/>
           </div>
 
           {/* Status bar */}

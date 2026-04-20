@@ -14,6 +14,7 @@ interface ProjectCreatePayload {
 }
 
 export const handleProjectSocket = (socket: any) => {
+  
   socket.on(
     "createProject",
     async ({ frontend, backend, projectName }: ProjectCreatePayload) => {
@@ -38,6 +39,15 @@ export const handleProjectSocket = (socket: any) => {
         "django",
         "laravel",
       ];
+      let completed = 0;
+  const total = (frontend ? 1 : 0) + (backend ? 1 : 0);
+  function checkDone(){
+    completed++;
+    if(completed == total){
+      socket.emit("project-step","done");
+      socket.emit("project-done",{projectId});
+    }
+  }
 
       if (!frontend && !backend) {
         socket.emit(
@@ -70,6 +80,10 @@ export const handleProjectSocket = (socket: any) => {
         proc.stderr.on("data", (data) =>
           socket.emit("project-log", data.toString())
         );
+        proc.on("close",(code)=>{
+          socket.emit("project-log",`Frontend process exited with code ${code}`);
+          checkDone();
+        })
         proc.on("error", (error) =>
           socket.emit(
             "project-log",
@@ -98,9 +112,11 @@ export const handleProjectSocket = (socket: any) => {
         proc.on("error", (error) =>
           socket.emit("project-log", `Backend command failed: ${error.message}`)
         );
-        proc.on("close", (code) =>
-          socket.emit("project-log", `Backend process exited with code ${code}`)
-        );
+        proc.on("close",(code)=>{
+          socket.emit("project-log",`Backend process exited with code ${code}`);
+          checkDone()
+        })
+
       }
     }
   );
