@@ -7,16 +7,13 @@ const MIN_WIDTH = 180;
 const MAX_WIDTH = 600;
 import { useParams } from "next/navigation";
 import Editor from "../../../../components/ide/EditorPanel";
+import ChatPanel from "../../../../components/ai/ChatPanel";
+import Terminal from "../../../../components/terminal/Terminal";
 
 export default function Ide() {
   const { id } = useParams();
   const [fileWidth, setFileWidth] = useState(220);
   const [aiWidth, setAiWidth] = useState(420);
-  const [activeAiTab, setActiveAiTab] = useState<"karma" | "linecoder">(
-    "karma"
-  );
-  const [chatInput, setChatInput] = useState("");
-  const [messages, setMessages] = useState<{ text: string }[]>([]);
 
   const draggingFile = useRef(false);
   const draggingAi = useRef(false);
@@ -78,12 +75,6 @@ export default function Ide() {
     e.preventDefault();
   };
 
-  const handleSend = () => {
-    const trimmed = chatInput.trim();
-    if (!trimmed) return;
-    setMessages((prev) => [...prev, { text: trimmed }]);
-    setChatInput("");
-  };
   console.log(id);
 
   return (
@@ -120,10 +111,10 @@ export default function Ide() {
 
         {/* RIGHT: Karma Active + Run Dev */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1.5 px-3 h-7 bg-[#1e2e1e] border border-green-700/50 rounded text-xs text-green-400">
+          {/* <div className="flex items-center gap-1.5 px-3 h-7 bg-[#1e2e1e] border border-green-700/50 rounded text-xs text-green-400">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
             Karma Active
-          </div>
+          </div> */}
           <button className="flex items-center gap-1.5 px-3 h-7 bg-[#2a2a2a] border border-[#3a3a3a] rounded text-xs text-gray-200 hover:bg-[#333] transition-colors">
             <span className="text-white">▶</span> Run Dev
           </button>
@@ -131,7 +122,9 @@ export default function Ide() {
       </div>
 
       {/* ── Main content ── */}
-      <div className="flex flex-1 min-h-0 w-full">
+      <div className="flex flex-1 min-h-0 w-full flex-col">
+        {/* Top section */}
+        <div className="flex flex-1 min-h-0 w-full">
         {/* ── File Explorer ── */}
         <div
           className="h-full bg-[#1e1e1e] shrink-0 overflow-y-auto flex flex-col border-r border-[#2a2a2a]"
@@ -177,119 +170,14 @@ export default function Ide() {
               <span>Prettier · ESLint</span>
             </div>
           </div>
-
-          {/* Terminal panel */}
-          <div className="h-44 bg-[#141420] border-t border-[#2a2a3a] flex flex-col shrink-0">
-            {/* Terminal tabs */}
-            <div className="flex items-center border-b border-[#2a2a3a] h-8 px-2 shrink-0">
-              {["Terminal", "Problems", "Output"].map((t) => (
-                <button
-                  key={t}
-                  className={`px-3 h-full text-xs border-b-2 transition-colors ${
-                    t === "Terminal"
-                      ? "text-white border-white"
-                      : "text-gray-500 border-transparent hover:text-gray-300"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-            {/* Terminal — empty with cursor */}
-            <div className="flex-1 p-2 font-mono text-[11px]">
-              <div className="flex items-center gap-1">
-                <span className="text-green-400">$</span>
-                <span className="w-2 h-3.5 bg-gray-400 animate-pulse inline-block" />
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Drag handle — AI panel */}
-        <div
-          onMouseDown={startDragAi}
-          className="w-1 h-full cursor-col-resize shrink-0 relative group"
-        >
-          <div className="absolute inset-0 bg-[#2a2a2a] group-hover:bg-blue-500 transition-colors duration-150" />
+        <ChatPanel aiWidth={aiWidth} onDragStart={startDragAi} />
         </div>
 
-        {/* ── AI Panel ── */}
-        <div
-          className="h-full bg-[#1a1a1a] shrink-0 overflow-hidden flex flex-col border-l border-[#2a2a2a]"
-          style={{ width: aiWidth }}
-        >
-          {/* AI panel tabs */}
-          <div className="flex items-center border-b border-[#2a2a2a] h-9 shrink-0">
-            <button
-              onClick={() => setActiveAiTab("karma")}
-              className={`px-4 h-full text-xs border-b-2 transition-colors ${activeAiTab === "karma" ? "text-white border-white" : "text-gray-500 border-transparent hover:text-gray-300"}`}
-            >
-              Karma v0.1
-            </button>
-            <button
-              onClick={() => setActiveAiTab("linecoder")}
-              className={`px-4 h-full text-xs border-b-2 transition-colors ${activeAiTab === "linecoder" ? "text-white border-white" : "text-gray-500 border-transparent hover:text-gray-300"}`}
-            >
-              Line Coder
-            </button>
-          </div>
-
-          {/* Karma header */}
-          <div className="px-4 pt-4 pb-2 border-b border-[#2a2a2a] shrink-0">
-            <h2 className="text-2xl font-bold text-gray-100 tracking-tight">
-              karma 0.1
-            </h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              AI Full-Stack Agent · Code Generation Mode
-            </p>
-            <div className="mt-2 h-1 w-full bg-[#2a2a2a] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-green-500 rounded-full"
-                style={{ width: "0%" }}
-              />
-            </div>
-          </div>
-
-          {/* Chat messages area */}
-          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
-            {messages.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-xs text-gray-600 text-center">
-                  Ask Karma to build something
-                </p>
-              </div>
-            ) : (
-              messages.map((msg, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <div className="w-6 h-6 rounded bg-[#2a2a4a] flex items-center justify-center text-[10px] font-bold text-blue-300 shrink-0">
-                    U
-                  </div>
-                  <p className="text-[11px] text-gray-300 leading-relaxed">
-                    {msg.text}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Chat input */}
-          <div className="p-3 border-t border-[#2a2a2a] flex items-center gap-2 shrink-0">
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Ask Karma to build something..."
-              className="flex-1 bg-[#111118] border border-[#2a2a3a] rounded-lg px-3 h-9 text-xs text-gray-300 placeholder-gray-600 outline-none focus:border-blue-500/50 transition-colors"
-            />
-            <button
-              onClick={handleSend}
-              className="px-4 h-9 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-medium text-white transition-colors shrink-0"
-            >
-              Send
-            </button>
-          </div>
-        </div>
+        {/* Terminal at bottom */}
+        <Terminal />
       </div>
     </div>
   );
