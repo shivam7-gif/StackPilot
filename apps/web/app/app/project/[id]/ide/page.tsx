@@ -9,6 +9,7 @@ import { useParams } from "next/navigation";
 import Editor from "../../../../components/ide/EditorPanel";
 import ChatPanel from "../../../../components/ai/ChatPanel";
 import Terminal from "../../../../components/terminal/Terminal";
+import { EditorButton } from "../../../../components/tree/EditorButton";
 
 export default function Ide() {
   const { id } = useParams();
@@ -135,9 +136,7 @@ export default function Ide() {
           </div>
           {/* Empty state */}
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-[11px] text-gray-600 text-center px-4">
-              No folder open
-            </p>
+            
           </div>
         </div>
 
@@ -152,7 +151,9 @@ export default function Ide() {
         {/* ── Editor ── */}
         <div className="flex-1 h-full bg-[#1a1a2e] min-w-0 overflow-hidden flex flex-col">
           {/* File tabs — empty */}
-          <div className="w-full flex items-center bg-[#1e1e2e] border-b border-[#2a2a3a] h-9 px-3 shrink-0"></div>
+          <div className="w-full flex items-center bg-[#1e1e2e] border-b border-[#2a2a3a] h-9 px-3 shrink-0">
+            <EditorButton isActive={true} />
+          </div>
 
           {/* Editor empty state */}
           <div className="flex-1 flex items-center justify-center">
