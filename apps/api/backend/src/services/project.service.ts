@@ -1,6 +1,6 @@
-import path from "path";
 import { fileURLToPath } from "url";
-
+import path from "path";
+import directoryTree from "directory-tree";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -45,3 +45,4 @@ export const getScaffoldCommand = (
 
   return { command: commands[framework], cwd };
 };
+

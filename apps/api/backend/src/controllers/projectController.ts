@@ -1,9 +1,10 @@
-import type { Request, Response } from "express";
 import util from "util";
 import child_process from "child_process";
 import fs from "fs/promises";
 import crypto from "crypto";
 import path from "path";
+import type { Request,Response } from "express";
+import { getProjectTreeService } from "../services/TreeService.js";
 import {
   getScaffoldCommand,
   type Framework,
@@ -25,7 +26,6 @@ const NAMED_SCAFFOLD_FRAMEWORKS: Framework[] = [
   "springboot",
 ];
 
-// These CLIs scaffold INTO the current dir (need pre-created folder + run inside it)
 const DOT_SCAFFOLD_FRAMEWORKS: Framework[] = ["astro", "express", "django"];
 
 interface CreateProjectBody {
@@ -44,41 +44,37 @@ const runScaffold = async (
   let cwd: string;
 
   if (isDotScaffold) {
-    // Pre-create the folder and scaffold INTO it using "."
     await fs.mkdir(targetFolder, { recursive: true });
     cwd = targetFolder;
   } else {
-    // DO NOT pre-create — let the CLI create the named folder itself
-    // Vite/Next/etc will prompt "destination not empty" if folder exists
     cwd = mainFolder;
   }
 
   const { command } = getScaffoldCommand(framework, dirName);
 
-  console.log(`🔧 [${framework}] Running: ${command}`);
-  console.log(`📂 [${framework}] cwd: ${cwd}`);
+  console.log(` [${framework}] Running: ${command}`);
+  console.log(` [${framework}] cwd: ${cwd}`);
 
   const { stdout, stderr } = await execPromisified(command, {
     cwd,
     timeout: 300_000,
     env: {
       ...process.env,
-      CI: "true", // suppresses interactive prompts for most Node CLIs
-      npm_config_yes: "true", // forces yes on npx prompts
+      CI: "true",
+      npm_config_yes: "true", 
     },
   });
 
-  console.log(`📜 [${framework}] stdout: ${stdout}`);
-  if (stderr) console.warn(`⚠️ [${framework}] stderr: ${stderr}`);
+  console.log(` [${framework}] stdout: ${stdout}`);
+  if (stderr) console.warn(` [${framework}] stderr: ${stderr}`);
 
-  // Verify the folder was actually created
   try {
     await fs.access(targetFolder);
-    console.log(`✅ [${framework}] Folder verified: ${targetFolder}`);
+    console.log(` [${framework}] Folder verified: ${targetFolder}`);
   } catch {
     const contents = await fs.readdir(mainFolder);
     console.warn(
-      `⚠️ [${framework}] Expected folder missing. mainFolder contains: [${contents.join(", ")}]`
+      ` [${framework}] Expected folder missing. mainFolder contains: [${contents.join(", ")}]`
     );
     throw new Error(
       `Scaffold failed: expected folder "${dirName}" was not created by ${framework} CLI`
@@ -138,11 +134,9 @@ export const CreateProjectController = async (req: Request, res: Response) => {
     console.log("main Folder : ", mainFolder);
     console.log("frontend subfolder : ", `${baseName}-frontend`);
     console.log("backend subfolder : ", `${baseName}-backend`);
-    // 1. Create main folder
     await fs.mkdir(mainFolder, { recursive: true });
     console.log("Main folder created:", mainFolder);
 
-    // 2. Pre-create only non-scaffolded folders
     await Promise.all([
       fs.mkdir(path.join(mainFolder, `${baseName}-architect`), {
         recursive: true,
@@ -151,9 +145,8 @@ export const CreateProjectController = async (req: Request, res: Response) => {
         recursive: true,
       }),
     ]);
-    console.log("✅ Architect + AI Engine folders created");
+    console.log(" Architect + AI Engine folders created");
 
-    // 3. Scaffold frontend & backend sequentially (avoid npx cache conflicts)
     if (frontend) {
       await runScaffold(frontend, `${baseName}-frontend`, mainFolder);
     }
@@ -182,7 +175,7 @@ export const CreateProjectController = async (req: Request, res: Response) => {
       date: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error("❌ Error creating project:", error);
+    console.error(" Error creating project:", error);
     return res.status(500).json({
       error: "Failed to create project",
       detail: error?.message,
@@ -191,3 +184,14 @@ export const CreateProjectController = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+export const getProjectTree = async(req:Request,res:Response)=>{
+  const {projectId} = req.params;
+  const tree = await getProjectTreeService(projectId);
+  return res.status(200).json({
+    data : tree,
+    success : true,
+    message: "Succesfully fetched the tree"
+  })
+}
