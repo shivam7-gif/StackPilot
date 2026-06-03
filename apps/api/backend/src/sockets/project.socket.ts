@@ -2,6 +2,7 @@ import { spawn } from "child_process";
 import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
+import { saveProjectRecord } from "../services/projectStore.js";
 import {
   getScaffoldCommand,
   type Framework,
@@ -24,7 +25,7 @@ const runSpawn = (
     const proc = spawn(command, {
       cwd,
       shell: true,
-      env: { ...process.env, CI: "true" }, // ← fixes interactive prompts
+      env: { ...process.env, CI: "true" },
     });
 
     proc.stdout.on("data", (data) =>
@@ -53,8 +54,7 @@ export const handleProjectSocket = (socket: any) => {
         : crypto.randomUUID();
 
       const projectId = crypto.randomUUID();
-      const mainFolder = path.join(PROJECTS_DIR, projectId); // ← unique container folder
-
+      const mainFolder = path.join(PROJECTS_DIR, projectId);
       socket.emit("project-log", `Creating project ${baseName}...`);
       socket.emit("project-step", "folders");
 
@@ -67,7 +67,6 @@ export const handleProjectSocket = (socket: any) => {
       }
 
       try {
-        // 1. create main folder + architect + ai-engine
         await fs.mkdir(mainFolder, { recursive: true });
         await Promise.all([
           fs.mkdir(path.join(mainFolder, `${baseName}-architect`), {
@@ -80,14 +79,13 @@ export const handleProjectSocket = (socket: any) => {
 
         socket.emit("project-step", "scaffolding");
 
-        // 2. frontend — sequential, not parallel
         if (frontend) {
           const { command } = getScaffoldCommand(
             frontend,
             `${baseName}-frontend`
           );
           socket.emit("project-log", `Scaffolding frontend: ${frontend}`);
-          await runSpawn(command, mainFolder, socket, "Frontend"); // ← cwd is mainFolder
+          await runSpawn(command, mainFolder, socket, "Frontend");
         }
 
         // 3. backend
@@ -97,14 +95,23 @@ export const handleProjectSocket = (socket: any) => {
             `${baseName}-backend`
           );
           socket.emit("project-log", `Scaffolding backend: ${backend}`);
-          await runSpawn(command, mainFolder, socket, "Backend"); // ← cwd is mainFolder
+          await runSpawn(command, mainFolder, socket, "Backend");
         }
+
+        await saveProjectRecord({
+          projectId,
+          projectName: projectName ?? baseName,
+          baseName,
+          folderName: projectId,
+          frontend,
+          backend,
+          createdAt: new Date().toISOString(),
+        });
 
         socket.emit("project-step", "done");
         socket.emit("project-done", { projectId, projectName: baseName });
       } catch (error: any) {
         socket.emit("project-log", `Error: ${error.message}`);
-        // cleanup on failure
         await fs
           .rm(mainFolder, { recursive: true, force: true })
           .catch(() => {});

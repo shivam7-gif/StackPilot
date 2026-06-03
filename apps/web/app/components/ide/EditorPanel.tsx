@@ -1,8 +1,6 @@
 "use client";
-import dynamic from "next/dynamic";
 import type { BeforeMount } from "@monaco-editor/react";
-
-const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+import Editor from "@monaco-editor/react";
 
 export default function EditorPanel() {
   const handleBeforeMount: BeforeMount = (monaco) => {

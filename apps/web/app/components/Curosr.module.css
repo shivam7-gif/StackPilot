@@ -1,0 +1,30 @@
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  background: #000;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.2s ease, height 0.2s ease;
+}
+
+.cursor svg {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.cursor--expanded {
+  width: 56px;
+  height: 56px;
+}
+
+.cursor--expanded svg {
+  opacity: 1;
+}

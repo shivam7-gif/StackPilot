@@ -3,8 +3,9 @@ import child_process from "child_process";
 import fs from "fs/promises";
 import crypto from "crypto";
 import path from "path";
-import type { Request,Response } from "express";
+import type { Request, Response } from "express";
 import { getProjectTreeService } from "../services/TreeService.js";
+import { saveProjectRecord } from "../services/projectStore.js";
 import {
   getScaffoldCommand,
   type Framework,
@@ -61,7 +62,7 @@ const runScaffold = async (
     env: {
       ...process.env,
       CI: "true",
-      npm_config_yes: "true", 
+      npm_config_yes: "true",
     },
   });
 
@@ -147,6 +148,16 @@ export const CreateProjectController = async (req: Request, res: Response) => {
     ]);
     console.log(" Architect + AI Engine folders created");
 
+    await saveProjectRecord({
+      projectId,
+      projectName,
+      baseName,
+      folderName: baseName,
+      frontend,
+      backend,
+      createdAt: new Date().toISOString(),
+    });
+
     if (frontend) {
       await runScaffold(frontend, `${baseName}-frontend`, mainFolder);
     }
@@ -185,13 +196,39 @@ export const CreateProjectController = async (req: Request, res: Response) => {
   }
 };
 
+export const getProjectTree = async (req: Request, res: Response) => {
+  const projectId = Array.isArray(req.params.projectId)
+    ? req.params.projectId[0]
+    : req.params.projectId;
 
-export const getProjectTree = async(req:Request,res:Response)=>{
-  const {projectId} = req.params;
-  const tree = await getProjectTreeService(projectId);
-  return res.status(200).json({
-    data : tree,
-    success : true,
-    message: "Succesfully fetched the tree"
-  })
-}
+  if (!projectId) {
+    return res.status(400).json({
+      success: false,
+      message: "Project id is required",
+    });
+  }
+
+  try {
+    const tree = await getProjectTreeService(projectId);
+    return res.status(200).json({
+      data: tree,
+      success: true,
+      message: "Successfully fetched the tree",
+    });
+  } catch (error: any) {
+    console.error("Error fetching project tree:", error);
+
+    if (error.message?.includes("Project record not found")) {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch project tree",
+      detail: error.message,
+    });
+  }
+};
