@@ -9,11 +9,21 @@ export const getProjectTreeService = async (projectId: string) => {
     throw new Error(`Project record not found for id ${projectId}`);
   }
 
-  const projectPath = path.join(PROJECTS_DIR, projectRecord.folderName);
-  const tree = directoryTree(projectPath);
-  
+  const candidatePaths = [path.join(PROJECTS_DIR, projectRecord.folderName)];
+  if (projectRecord.folderName !== projectId) {
+    candidatePaths.push(path.join(PROJECTS_DIR, projectId));
+  }
+
+  let tree = null;
+  let lastPath = candidatePaths[0];
+  for (const candidatePath of candidatePaths) {
+    lastPath = candidatePath;
+    tree = directoryTree(candidatePath);
+    if (tree) break;
+  }
+
   if (!tree) {
-    throw new Error(`Project folder missing at ${projectPath}`);
+    throw new Error(`Project folder missing at ${lastPath}`);
   }
 
   return tree;

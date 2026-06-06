@@ -1,7 +1,6 @@
 import "./EditorButton.css";
 export const EditorButton = ({ isActive }: { isActive: boolean }) => {
   function handleClick() {
-    // implement click handler
   }
   return (
     <button
