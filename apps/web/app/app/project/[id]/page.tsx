@@ -1,12 +1,11 @@
-"use client";
-import { useParams } from "next/navigation";
+// app/project/[id]/page.tsx
+import { redirect } from "next/navigation";
 
-export default function ProjectPage() {
-  const { id } = useParams();
-
-  return (
-    <div>
-      <h1>Project: {id}</h1>
-    </div>
-  );
+export default async function ProjectPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  redirect(`/project/${id}/ide`);
 }

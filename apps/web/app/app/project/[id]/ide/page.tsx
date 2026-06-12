@@ -15,6 +15,9 @@ import ChatPanel from "../../../../components/ai/ChatPanel";
 import Terminal from "../../../../components/Terminal/Terminal";
 import { EditorButton } from "../../../../components/tree/EditorButton";
 
+import {TreeStructure} from "../../../../components/TreeStructure/TreeStructure" 
+
+
 export default function Ide() {
   const { id } = useParams();
   const [fileWidth, setFileWidth] = useState(220);
@@ -108,24 +111,15 @@ export default function Ide() {
         </div>
 
         <div className="flex-1" />
-
-        {/* RIGHT: Karma Active + Run Dev */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* <div className="flex items-center gap-1.5 px-3 h-7 bg-[#1e2e1e] border border-green-700/50 rounded text-xs text-green-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-            Karma Active
-          </div> */}
+        
           <button className="flex items-center gap-1.5 px-3 h-7 bg-[#2a2a2a] border border-[#3a3a3a] rounded text-xs text-gray-200 hover:bg-[#333] transition-colors">
             <span className="text-white">▶</span> Run Dev
           </button>
         </div>
       </div>
-
-      {/* ── Main content ── */}
       <div className="flex flex-1 min-h-0 w-full flex-col">
-        {/* Top section */}
         <div className="flex flex-1 min-h-0 w-full">
-          {/* ── File Explorer ── */}
           <div
             className="h-full bg-[#1e1e1e] shrink-0 overflow-y-auto flex flex-col border-r border-[#2a2a2a]"
             style={{ width: fileWidth }}
@@ -133,31 +127,26 @@ export default function Ide() {
             <div className="px-3 py-2 text-[10px] font-semibold tracking-[0.15em] text-gray-500 uppercase border-b border-[#2a2a2a]">
               Explorer
             </div>
-            {/* Empty state */}
-            <div className="flex-1 flex items-center justify-center"></div>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-gray-500">Project Tree Structure</div>
+              <TreeStructure/>
+            </div>
           </div>
 
-          {/* Drag handle — explorer */}
           <div
             onMouseDown={startDragFile}
             className="w-1 h-full cursor-col-resize shrink-0 relative group"
           >
             <div className="absolute inset-0 bg-[#2a2a2a] group-hover:bg-blue-500 transition-colors duration-150" />
           </div>
-
-          {/* ── Editor ── */}
           <div className="flex-1 h-full bg-[#1a1a2e] min-w-0 overflow-hidden flex flex-col">
-            {/* File tabs — empty */}
             <div className="w-full flex items-center bg-[#1e1e2e] border-b border-[#2a2a3a] h-9 px-3 shrink-0">
               <EditorButton isActive={true} />
             </div>
-
-            {/* Editor empty state */}
             <div className="flex-1 flex items-center justify-center">
               <Editor />
             </div>
 
-            {/* Status bar */}
             <div className="h-6 bg-[#1e1e2e] border-t border-[#2a2a3a] flex items-center px-3 gap-4 text-[10px] text-gray-500 shrink-0">
               <span className="text-green-400 font-medium">✓ TypeScript</span>
               <span>Ln 1, Col 1</span>
@@ -170,11 +159,8 @@ export default function Ide() {
             </div>
           </div>
 
-          {/* Drag handle — AI panel */}
           <ChatPanel aiWidth={aiWidth} onDragStart={startDragAi} />
         </div>
-
-        {/* Terminal at bottom */}
         <Terminal />
       </div>
     </div>

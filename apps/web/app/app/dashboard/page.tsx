@@ -32,7 +32,7 @@ export default function DashboardPage() {
     socket.on("project-done", ({ projectId }) => {
       setoverlayStep("done");
       setTimeout(() => {
-        router.push(`/project/${projectId}/ide`);
+        router.push(`/project/${projectId}`);
       });
     });
 
