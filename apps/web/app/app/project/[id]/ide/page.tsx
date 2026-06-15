@@ -1,6 +1,8 @@
 "use client";
 import { useRef, useState, useCallback, useEffect } from "react";
+import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
+
 const Editor = dynamic(
   () => import("../../../../components/ide/EditorPanel"),
   {
@@ -8,15 +10,13 @@ const Editor = dynamic(
     loading: () => <div className="text-white">Loading editor...</div>,
   }
 );
-const MIN_WIDTH = 180;
-const MAX_WIDTH = 600;
-import { useParams } from "next/navigation";
+
 import ChatPanel from "../../../../components/ai/ChatPanel";
 import Terminal from "../../../../components/Terminal/Terminal";
-import { EditorButton } from "../../../../components/tree/EditorButton";
-
-import {TreeStructure} from "../../../../components/TreeStructure/TreeStructure" 
-
+import { TreeStructure } from "../../../../components/TreeStructure/TreeStructure";
+import { useTreeStructureStore } from "../../../../store/TreeStructureStore";
+const MIN_WIDTH = 180;
+const MAX_WIDTH = 600;
 
 export default function Ide() {
   const { id } = useParams();
@@ -30,20 +30,12 @@ export default function Ide() {
 
   const onMouseMoveFile = useCallback((e: MouseEvent) => {
     if (!draggingFile.current) return;
-    const next = Math.min(
-      MAX_WIDTH,
-      Math.max(MIN_WIDTH, startWidth.current + (e.clientX - startX.current))
-    );
-    setFileWidth(next);
+    setFileWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth.current + (e.clientX - startX.current))));
   }, []);
 
   const onMouseMoveAi = useCallback((e: MouseEvent) => {
     if (!draggingAi.current) return;
-    const next = Math.min(
-      MAX_WIDTH,
-      Math.max(MIN_WIDTH, startWidth.current + (startX.current - e.clientX))
-    );
-    setAiWidth(next);
+    setAiWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth.current + (startX.current - e.clientX))));
   }, []);
 
   const onMouseUp = useCallback(() => {
@@ -81,9 +73,12 @@ export default function Ide() {
     document.body.style.userSelect = "none";
     e.preventDefault();
   };
+  const { id: projectIdFromUrl } = useParams();
+  const {setProjectId ,projectId} = useTreeStructureStore();
 
-  console.log(id);
-
+  useEffect(()=>{
+    setProjectId(projectIdFromUrl)
+  },[setProjectId , projectIdFromUrl])
   return (
     <div className="h-screen w-screen bg-[#1a1a1a] text-white flex flex-col font-sans overflow-hidden">
       <h1>project Id : {id}</h1>
@@ -94,30 +89,22 @@ export default function Ide() {
           <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
         </div>
 
-        <span className="text-sm font-bold text-white mr-2 shrink-0">
-          StackPilot
-        </span>
+        <span className="text-sm font-bold text-white mr-2 shrink-0">StackPilot</span>
 
         <div className="flex items-center gap-1 shrink-0">
-          <button className="px-3 h-6 text-xs bg-[#3a3a4a] text-white rounded font-medium">
-            Editor
-          </button>
-          <button className="px-3 h-6 text-xs text-gray-400 hover:text-gray-200 transition-colors">
-            Preview
-          </button>
-          <button className="px-3 h-6 text-xs text-gray-400 hover:text-gray-200 transition-colors">
-            Deploy
-          </button>
+          <button className="px-3 h-6 text-xs bg-[#3a3a4a] text-white rounded font-medium">Editor</button>
+          <button className="px-3 h-6 text-xs text-gray-400 hover:text-gray-200 transition-colors">Preview</button>
+          <button className="px-3 h-6 text-xs text-gray-400 hover:text-gray-200 transition-colors">Deploy</button>
         </div>
 
         <div className="flex-1" />
         <div className="flex items-center gap-2 shrink-0">
-        
           <button className="flex items-center gap-1.5 px-3 h-7 bg-[#2a2a2a] border border-[#3a3a3a] rounded text-xs text-gray-200 hover:bg-[#333] transition-colors">
             <span className="text-white">▶</span> Run Dev
           </button>
         </div>
       </div>
+
       <div className="flex flex-1 min-h-0 w-full flex-col">
         <div className="flex flex-1 min-h-0 w-full">
           <div
@@ -128,25 +115,21 @@ export default function Ide() {
               Explorer
             </div>
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-gray-500">Project Tree Structure</div>
-              <TreeStructure/>
+              <TreeStructure />
             </div>
           </div>
 
-          <div
-            onMouseDown={startDragFile}
-            className="w-1 h-full cursor-col-resize shrink-0 relative group"
-          >
+          <div onMouseDown={startDragFile} className="w-1 h-full cursor-col-resize shrink-0 relative group">
             <div className="absolute inset-0 bg-[#2a2a2a] group-hover:bg-blue-500 transition-colors duration-150" />
           </div>
+
           <div className="flex-1 h-full bg-[#1a1a2e] min-w-0 overflow-hidden flex flex-col">
             <div className="w-full flex items-center bg-[#1e1e2e] border-b border-[#2a2a3a] h-9 px-3 shrink-0">
-              <EditorButton isActive={true} />
+              {/* <EditorButton isActive={true} /> */}
             </div>
             <div className="flex-1 flex items-center justify-center">
               <Editor />
             </div>
-
             <div className="h-6 bg-[#1e1e2e] border-t border-[#2a2a3a] flex items-center px-3 gap-4 text-[10px] text-gray-500 shrink-0">
               <span className="text-green-400 font-medium">✓ TypeScript</span>
               <span>Ln 1, Col 1</span>

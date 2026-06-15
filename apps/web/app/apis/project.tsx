@@ -9,13 +9,13 @@ export const createProjectApi = async () => {
   }
 };
 
-export const getProjectTree = async({projectId})=>{
-  try{
-    const response = await axios.get(`projects/${projectId}/tree`)
-    console.log(response.data);
-    return response.data;
+export const getProjectTree = async ({ projectId }) => {
+  try {
+    const response = await axios.get(`projects/${projectId}/tree`);
+    console.log("API Response:", response.data);
+    return response.data.data; // Extract the tree data from the response wrapper
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching project tree:", error);
     throw error;
   }
-}
+};
