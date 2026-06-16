@@ -1,8 +1,6 @@
 @import "tailwindcss";
 
-*, *::before, *::after {
-  cursor: none;
-}
+/* removed global cursor:none to ensure pointer is visible */
 :root {
   --background: #ffffff;
   --foreground: #171717;

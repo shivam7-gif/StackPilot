@@ -1,0 +1,55 @@
+.treeContainer {
+  color: white;
+  padding: 6px 8px;
+  border-radius: 6px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.treeItem {
+  display: flex;
+  align-items: center;
+  padding: 6px 4px;
+  border-radius: 4px;
+}
+
+.iconWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.folderIcon {
+  color: #f0c674;
+  height: 16px;
+  width: 16px;
+}
+
+.name {
+  margin-left: 4px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+/* Custom scrollbar for WebKit browsers */
+.treeContainer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.treeContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.treeContainer::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Firefox */
+.treeContainer {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}

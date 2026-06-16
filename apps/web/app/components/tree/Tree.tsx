@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { IoIosArrowForward } from "react-icons/io";
-import { icons } from "./treeIcons";
+import { FaFolder, FaFolderOpen } from "react-icons/fa";
+import { FileIcon } from "../FileIcon/FileIcon";
+import styles from "./Tree.module.css";
 
 interface TreeNode {
   name: string;
@@ -24,38 +26,15 @@ export const Tree = ({ fileFolderData }: TreeProps) => {
     fileFolderData.children && fileFolderData.children.length > 0;
   const extension = fileFolderData.name.split(".").pop()?.toLowerCase();
   const isReactFile = extension === "tsx" || extension === "jsx";
-  const isFile = !hasChildren;
-  const iconSrc = hasChildren
-    ? icons.folder
-    : isReactFile
-      ? icons.reactFile
-      : icons.file;
-
-  const itemIcon = (
-    <img
-      src={iconSrc}
-      alt={
-        hasChildren
-          ? "folder icon"
-          : isReactFile
-            ? "react file icon"
-            : "file icon"
-      }
-      style={{ width: 18, height: 18 }}
-    />
-  );
 
   return (
-    <div style={{ color: "white" }}>
+    <div className={styles.treeContainer}>
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        className={styles.treeItem}
         style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "4px 0",
-          background: hovered ? "rgba(255, 255, 255, 0.08)" : "transparent",
-          borderRadius: "4px",
+          background: hovered ? "rgba(255, 255, 255, 0.04)" : "transparent",
         }}
       >
         {hasChildren ? (
@@ -87,18 +66,20 @@ export const Tree = ({ fileFolderData }: TreeProps) => {
           <span style={{ display: "inline-block", width: "24px" }} />
         )}
 
-        <span
-          style={{ display: "flex", alignItems: "center", marginLeft: "8px" }}
-        >
-          {itemIcon}
+        <span className={styles.iconWrap}>
+          {hasChildren ? (
+            expanded ? (
+              <FaFolderOpen className={styles.folderIcon} />
+            ) : (
+              <FaFolder className={styles.folderIcon} />
+            )
+          ) : (
+            <FileIcon extension={extension || "file"} />
+          )}
           <span
-            style={{
-              marginLeft: "8px",
-              cursor: isFile ? "default" : "pointer",
-              fontSize: "15px",
-              color: isReactFile ? "#61dafb" : "white",
-            }}
+            className={styles.name}
             onClick={() => hasChildren && setExpanded((prev) => !prev)}
+            style={{ color: isReactFile ? "#61dafb" : undefined }}
           >
             {fileFolderData.name}
           </span>
