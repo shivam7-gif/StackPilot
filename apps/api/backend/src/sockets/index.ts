@@ -5,6 +5,7 @@ export function initSocket(httpServer: any) {
   const io = new Server(httpServer, {
     cors: {
       origin: "*",
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     },
   });
 

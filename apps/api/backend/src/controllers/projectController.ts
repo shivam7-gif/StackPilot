@@ -5,7 +5,10 @@ import crypto from "crypto";
 import path from "path";
 import type { Request, Response } from "express";
 import { getProjectTreeService } from "../services/TreeService.js";
-import { saveProjectRecord } from "../services/projectStore.js";
+import {
+  saveProjectRecord,
+  getProjectRecord,
+} from "../services/projectStore.js";
 import {
   getScaffoldCommand,
   type Framework,
@@ -230,5 +233,27 @@ export const getProjectTree = async (req: Request, res: Response) => {
       message: "Failed to fetch project tree",
       detail: error.message,
     });
+  }
+};
+
+export const getProjectMeta = async (req: Request, res: Response) => {
+  const projectId = Array.isArray(req.params.projectId)
+    ? req.params.projectId[0]
+    : req.params.projectId;
+
+  if (!projectId)
+    return res.status(400).json({ error: "Project Id is required" });
+
+  try {
+    const rec = await getProjectRecord(projectId);
+    if (!rec) return res.status(404).json({ error: "Project not found" });
+    return res.status(200).json({
+      projectId: rec.projectId,
+      projectName: rec.projectName,
+      baseName: rec.baseName,
+      folderName: rec.folderName,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: String(err) });
   }
 };

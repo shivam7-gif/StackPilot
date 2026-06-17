@@ -4,7 +4,16 @@ import { getProjectTree } from "@/apis/project";
 
 const queryClient = new QueryClient();
 
-export const useTreeStructureStore = create((set, get) => ({
+interface TreeStructureState {
+  projectId: string | null;
+  treeStructure: any;
+  isLoading: boolean;
+  error: string | null;
+  setProjectId: (projectId: string | null) => void;
+  setTreeStructure: (projectId: string | null) => Promise<void>;
+}
+
+export const useTreeStructureStore = create<TreeStructureState>((set) => ({
   projectId: null,
   treeStructure: null,
   isLoading: false,
