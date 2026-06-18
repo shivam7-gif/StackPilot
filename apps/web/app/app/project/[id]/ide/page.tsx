@@ -2,7 +2,8 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useParams } from "next/navigation";
 import axios from "axios";
- import dynamic from "next/dynamic";
+import dynamic from "next/dynamic";
+import {io} from "socket.io-client";
 const Editor = dynamic(
   () => import("../../../../components/ide/EditorPanel"),
   {
@@ -23,9 +24,12 @@ export default function Ide() {
   const { setProjectId, projectId } = useTreeStructureStore();
   const [fileWidth, setFileWidth] = useState(220);
   const [aiWidth, setAiWidth] = useState(420);
-  const [projectName , setProjectName] = useState("");
-  const [projectBaseName , setProjectBaseName] = useState("");
-  const [projectFolderName , setProjectFolderName] = useState("");
+  const [projectName, setProjectName] = useState("");
+  const [projectBaseName, setProjectBaseName] = useState("");
+  const [projectFolderName, setProjectFolderName] = useState("");
+  const {setEditorSocket } = useEditorSocketStore();
+
+
   const draggingFile = useRef(false);
   const draggingAi = useRef(false);
   const startX = useRef(0);
@@ -94,6 +98,10 @@ export default function Ide() {
     document.body.style.userSelect = "none";
     e.preventDefault();
   };
+  
+  useEffect(()=>{
+    setProjectId(projectIdFromUrl);
+  })
 
   useEffect(() => {
     if (id) {
@@ -135,12 +143,7 @@ export default function Ide() {
             <div className="px-3 py-2 text-[10px] font-semibold tracking-[0.15em] text-gray-500 uppercase border-b border-[#2a2a2a] select-none">
               Explorer
             </div>
-            {projectName && (
-              <div className="px-3 py-2 text-xs font-semibold text-gray-300 border-b border-[#242424] bg-[#1a1a1a]/40 flex items-center gap-1.5 select-none">
-                <span className="text-[10px] text-blue-400">📁</span>
-                <span className="truncate">{projectName}</span>
-              </div>
-            )}
+
             <div className="flex-1 overflow-y-auto">
               <TreeStructure />
             </div>
