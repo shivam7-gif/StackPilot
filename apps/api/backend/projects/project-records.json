@@ -52,5 +52,14 @@
     "frontend": "react",
     "backend": "express",
     "createdAt": "2026-06-18T10:22:40.342Z"
+  },
+  {
+    "projectId": "b7f1675b-1b74-45e5-887c-4a66b41376fc",
+    "projectName": "testing2",
+    "baseName": "testing2",
+    "folderName": "b7f1675b-1b74-45e5-887c-4a66b41376fc",
+    "frontend": "react",
+    "backend": "express",
+    "createdAt": "2026-06-19T14:38:03.105Z"
   }
 ]

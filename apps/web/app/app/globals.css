@@ -25,3 +25,26 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.ide-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.ide-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ide-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(121, 121, 121, 0.4);
+  border-radius: 4px;
+}
+
+.ide-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(121, 121, 121, 0.7);
+}
+
+.ide-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(121, 121, 121, 0.4) transparent;
+}

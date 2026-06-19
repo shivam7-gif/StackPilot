@@ -1,97 +1,116 @@
 "use client";
 
 import { useState } from "react";
-import { IoIosArrowForward } from "react-icons/io";
-import { FaFolder, FaFolderOpen } from "react-icons/fa";
 import { FileIcon } from "../FileIcon/FileIcon";
-import styles from "./Tree.module.css";
+import { useActiveFileTabStore } from "../../store/activeFileTabStore";
 
 interface TreeNode {
   name: string;
+  path?: string;
   children?: TreeNode[];
   type?: string;
 }
 
 interface TreeProps {
   fileFolderData: TreeNode;
+  depth?: number;
 }
 
-export const Tree = ({ fileFolderData }: TreeProps) => {
-  const [expanded, setExpanded] = useState(true);
-  const [hovered, setHovered] = useState(false);
+function Chevron({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      className={`text-[#858585] shrink-0 transition-transform duration-150 ${
+        expanded ? "rotate-90" : ""
+      }`}
+    >
+      <path d="M6 4l4 4-4 4V4z" />
+    </svg>
+  );
+}
+
+function FolderIcon({ open }: { open: boolean }) {
+  return open ? (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="#dcb67a" className="shrink-0">
+      <path d="M20 6h-8l-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2z" />
+    </svg>
+  ) : (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="#dcb67a" className="shrink-0">
+      <path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z" />
+    </svg>
+  );
+}
+
+export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
+  const [expanded, setExpanded] = useState(depth < 2);
+  const activeFileTab = useActiveFileTabStore((s) => s.activeFileTab);
+  const setActiveFileTab = useActiveFileTabStore((s) => s.setActiveFileTab);
 
   if (!fileFolderData) return null;
 
   const hasChildren =
     fileFolderData.children && fileFolderData.children.length > 0;
-  const extension = fileFolderData.name.split(".").pop()?.toLowerCase();
+  const extension = fileFolderData.name.split(".").pop()?.toLowerCase() ?? "file";
+  const isFolder = hasChildren || fileFolderData.type === "directory";
+  const nodePath = fileFolderData.path ?? fileFolderData.name;
+  const isSelected = !isFolder && activeFileTab?.path === nodePath;
   const isReactFile = extension === "tsx" || extension === "jsx";
 
+  const handleClick = () => {
+    if (isFolder) {
+      setExpanded((prev) => !prev);
+    } else {
+      setActiveFileTab(nodePath, "", extension);
+    }
+  };
+
   return (
-    <div className={styles.treeContainer}>
-      <div
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        className={styles.treeItem}
-        style={{
-          background: hovered ? "rgba(255, 255, 255, 0.04)" : "transparent",
-        }}
+    <div>
+      <button
+        type="button"
+        onClick={handleClick}
+        className={`w-full flex items-center h-[22px] pr-2 text-left group transition-colors ${
+          isSelected
+            ? "bg-[#04395e] text-[#ffffff]"
+            : "text-[#cccccc] hover:bg-[#2a2d2e]"
+        }`}
+        style={{ paddingLeft: `${8 + depth * 12}px` }}
       >
-        {hasChildren ? (
-          <button
-            type="button"
-            onClick={() => setExpanded((prev) => !prev)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "24px",
-              height: "24px",
-              background: "transparent",
-              border: "none",
-              color: "white",
-              cursor: "pointer",
-              outline: "none",
-              padding: 0,
-            }}
-          >
-            <IoIosArrowForward
-              style={{
-                transition: "transform 0.2s",
-                transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
-              }}
-            />
-          </button>
-        ) : (
-          <span style={{ display: "inline-block", width: "24px" }} />
-        )}
-
-        <span className={styles.iconWrap}>
-          {hasChildren ? (
-            expanded ? (
-              <FaFolderOpen className={styles.folderIcon} />
-            ) : (
-              <FaFolder className={styles.folderIcon} />
-            )
+        <span className="w-4 h-4 flex items-center justify-center shrink-0">
+          {isFolder ? (
+            <Chevron expanded={expanded} />
           ) : (
-            <FileIcon extension={extension || "file"} />
+            <span className="w-4" />
           )}
-          <span
-            className={styles.name}
-            onClick={() => hasChildren && setExpanded((prev) => !prev)}
-            style={{ color: isReactFile ? "#61dafb" : undefined }}
-          >
-            {fileFolderData.name}
-          </span>
         </span>
-      </div>
 
-      {hasChildren && expanded && (
-        <div style={{ paddingLeft: "18px" }}>
+        <span className="w-4 h-4 flex items-center justify-center shrink-0 mr-1.5">
+          {isFolder ? (
+            <FolderIcon open={expanded} />
+          ) : (
+            <FileIcon extension={extension} />
+          )}
+        </span>
+
+        <span
+          className={`text-[13px] truncate ${
+            isReactFile && !isSelected ? "text-[#4fc1ff]" : ""
+          }`}
+        >
+          {fileFolderData.name}
+        </span>
+      </button>
+
+      {isFolder && expanded && fileFolderData.children && (
+        <div>
           {fileFolderData.children.map((child) => (
             <Tree
-              key={`${child.name}-${child.type ?? "node"}`}
+              key={`${child.path ?? child.name}-${child.type ?? "node"}`}
               fileFolderData={child}
+              depth={depth + 1}
             />
           ))}
         </div>
