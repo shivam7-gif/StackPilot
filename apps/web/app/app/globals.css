@@ -1,50 +1,250 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
 @import "tailwindcss";
 
-/* removed global cursor:none to ensure pointer is visible */
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ═══════════════════════════════════════════════════════════
+   DARK THEME (default)
+═══════════════════════════════════════════════════════════ */
+:root,
+[data-theme="dark"] {
+  --ide-bg:               #1e1e1e;
+  --ide-sidebar-bg:       #181818;
+  --ide-tab-active-bg:    #1e1e1e;
+  --ide-tab-inactive-bg:  #2d2d2d;
+  --ide-border:           #2b2b2b;
+  --ide-accent:           #007fd4;
+  --ide-accent-hover:     #1177bb;
+  --ide-text:             #cccccc;
+  --ide-text-bright:      #e0e0e0;
+  --ide-text-muted:       #858585;
+  --ide-text-dim:         #555555;
+  --ide-hover:            #2a2d2e;
+  --ide-hover-strong:     #333333;
+  --ide-selected:         #04395e;
+  --ide-selected-text:    #ffffff;
+  --ide-statusbar-bg:     #007acc;
+  --ide-folder-color:     #dcb67a;
+  --ide-react-color:      #4fc1ff;
+  --ide-input-bg:         #252525;
+  --ide-input-border:     #3c3c3c;
+  --ide-input-border-focus: rgba(0,127,212,0.5);
+  --ide-chat-user-bg:     #0e639c;
+  --ide-chat-user-text:   #e0e0e0;
+  --ide-chat-ai-bg:       #252525;
+  --ide-chat-ai-text:     #cccccc;
+  --ide-code-bg:          #0d1117;
+  --ide-code-border:      #30363d;
+  --ide-code-text:        #e6edf3;
+  --ide-suggestion-bg:    #252525;
+  --ide-suggestion-border:#333333;
+  --ide-suggestion-hover: #2d2d2d;
+  --ide-titlebar-bg:      #181818;
+  --ide-activity-bg:      #181818;
+  --ide-chip-bg:          rgba(0,127,212,0.15);
+  --ide-chip-border:      rgba(0,127,212,0.3);
+  --ide-chip-text:        #4fc1ff;
+  --ide-scrollbar:        rgba(121,121,121,0.35);
+  --ide-scrollbar-hover:  rgba(121,121,121,0.65);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ═══════════════════════════════════════════════════════════
+   LIGHT THEME
+═══════════════════════════════════════════════════════════ */
+[data-theme="light"] {
+  --ide-bg:               #ffffff;
+  --ide-sidebar-bg:       #f3f3f3;
+  --ide-tab-active-bg:    #ffffff;
+  --ide-tab-inactive-bg:  #ececec;
+  --ide-border:           #e0e0e0;
+  --ide-accent:           #005fb8;
+  --ide-accent-hover:     #0066cc;
+  --ide-text:             #383838;
+  --ide-text-bright:      #1a1a1a;
+  --ide-text-muted:       #717171;
+  --ide-text-dim:         #aaaaaa;
+  --ide-hover:            #e8e8e8;
+  --ide-hover-strong:     #dcdcdc;
+  --ide-selected:         #cce5ff;
+  --ide-selected-text:    #1a1a1a;
+  --ide-statusbar-bg:     #005fb8;
+  --ide-folder-color:     #c09040;
+  --ide-react-color:      #0070c1;
+  --ide-input-bg:         #f0f0f0;
+  --ide-input-border:     #d0d0d0;
+  --ide-input-border-focus: rgba(0,95,184,0.4);
+  --ide-chat-user-bg:     #005fb8;
+  --ide-chat-user-text:   #ffffff;
+  --ide-chat-ai-bg:       #f0f0f0;
+  --ide-chat-ai-text:     #333333;
+  --ide-code-bg:          #f6f8fa;
+  --ide-code-border:      #d1d5da;
+  --ide-code-text:        #24292e;
+  --ide-suggestion-bg:    #f5f5f5;
+  --ide-suggestion-border:#e0e0e0;
+  --ide-suggestion-hover: #ebebeb;
+  --ide-titlebar-bg:      #dddddd;
+  --ide-activity-bg:      #2c2c2c;
+  --ide-chip-bg:          rgba(0,95,184,0.1);
+  --ide-chip-border:      rgba(0,95,184,0.25);
+  --ide-chip-text:        #005fb8;
+  --ide-scrollbar:        rgba(100,100,100,0.25);
+  --ide-scrollbar-hover:  rgba(100,100,100,0.5);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+* { box-sizing: border-box; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ide-bg);
+  color: var(--ide-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
 }
 
-.ide-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.ide-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+/* ─── IDE Scrollbar ─────────────────────────────────────── */
+.ide-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.ide-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .ide-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(121, 121, 121, 0.4);
+  background-color: var(--ide-scrollbar);
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+.ide-scrollbar::-webkit-scrollbar-thumb:hover { background-color: var(--ide-scrollbar-hover); }
+.ide-scrollbar { scrollbar-width: thin; scrollbar-color: var(--ide-scrollbar) transparent; }
+
+.thin-scrollbar::-webkit-scrollbar { height: 3px; width: 3px; }
+.thin-scrollbar::-webkit-scrollbar-thumb { background-color: var(--ide-scrollbar); border-radius: 2px; }
+
+/* ─── Animations ─────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+@keyframes fadeIn {
+  from { opacity: 0; } to { opacity: 1; }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0);   }
+}
+@keyframes typing-dot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0,127,212,0.4); }
+  50%       { box-shadow: 0 0 18px rgba(0,127,212,0.7); }
+}
+
+.animate-fade-in-up   { animation: fadeInUp 0.18s ease-out both; }
+.animate-fade-in      { animation: fadeIn 0.15s ease-out both; }
+.animate-slide-in-right { animation: slideInRight 0.2s ease-out both; }
+
+/* ─── Typing dots ────────────────────────────────────────── */
+.typing-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: typing-dot 1.2s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+/* ─── Resize handles ─────────────────────────────────────── */
+.resize-handle-h {
+  cursor: row-resize;
+  height: 4px;
+  background: transparent;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.resize-handle-h:hover,
+.resize-handle-h:active { background: var(--ide-accent); }
+
+/* ─── Activity bar left border indicator ────────────────── */
+.activity-item-active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 2px; height: 24px;
+  background: var(--ide-text-bright);
+  border-radius: 0 2px 2px 0;
+}
+
+/* ─── Chat code block ────────────────────────────────────── */
+.chat-code-block {
+  background: var(--ide-code-bg);
+  border: 1px solid var(--ide-code-border);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.65;
+  padding: 10px 14px;
+  overflow-x: auto;
+  color: var(--ide-code-text);
+  margin: 4px 0;
+}
+
+/* ─── Context chip ───────────────────────────────────────── */
+.context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  background: var(--ide-chip-bg);
+  border: 1px solid var(--ide-chip-border);
+  border-radius: 5px;
+  font-size: 11px;
+  color: var(--ide-chip-text);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ─── Tab close button ───────────────────────────────────── */
+.tab-close-btn { opacity: 0; transition: opacity 0.1s; }
+.tab-item:hover .tab-close-btn,
+.tab-item.active .tab-close-btn { opacity: 1; }
+
+/* ─── Tooltip ─────────────────────────────────────────────── */
+.ide-tooltip { position: relative; }
+.ide-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 100%; top: 50%;
+  transform: translateY(-50%);
+  margin-left: 8px;
+  background: var(--ide-hover-strong);
+  border: 1px solid var(--ide-border);
+  color: var(--ide-text);
+  font-size: 11px;
+  padding: 3px 8px;
   border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 100;
+}
+.ide-tooltip:hover::after { opacity: 1; }
+
+/* ─── AI Shimmer (loading) ───────────────────────────────── */
+.ai-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.05) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 
-.ide-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(121, 121, 121, 0.7);
-}
-
-.ide-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(121, 121, 121, 0.4) transparent;
+/* ─── Glow on focused input ──────────────────────────────── */
+.chat-input-focused {
+  animation: glowPulse 2s ease-in-out infinite;
 }

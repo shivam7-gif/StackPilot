@@ -20,13 +20,15 @@ interface TreeProps {
 function Chevron({ expanded }: { expanded: boolean }) {
   return (
     <svg
-      width="16"
-      height="16"
+      width="12"
+      height="12"
       viewBox="0 0 16 16"
       fill="currentColor"
-      className={`text-[#858585] shrink-0 transition-transform duration-150 ${
-        expanded ? "rotate-90" : ""
-      }`}
+      className="text-[#858585] shrink-0"
+      style={{
+        transition: "transform 0.12s ease",
+        transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+      }}
     >
       <path d="M6 4l4 4-4 4V4z" />
     </svg>
@@ -35,23 +37,11 @@ function Chevron({ expanded }: { expanded: boolean }) {
 
 function FolderIcon({ open }: { open: boolean }) {
   return open ? (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="#dcb67a"
-      className="shrink-0"
-    >
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="#dcb67a" className="shrink-0">
       <path d="M20 6h-8l-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2z" />
     </svg>
   ) : (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="#dcb67a"
-      className="shrink-0"
-    >
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="#dcb67a" className="shrink-0">
       <path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z" />
     </svg>
   );
@@ -59,58 +49,80 @@ function FolderIcon({ open }: { open: boolean }) {
 
 export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
   const [expanded, setExpanded] = useState(depth < 2);
-  const activeFileTab = useActiveFileTabStore((s) => s.activeFileTab);
-  const setActiveFileTab = useActiveFileTabStore((s) => s.setActiveFileTab);
+  const [hovered, setHovered] = useState(false);
 
-  if (!fileFolderData) return null;
-
-  const hasChildren =
-    fileFolderData.children && fileFolderData.children.length > 0;
-  const extension =
-    fileFolderData.name.split(".").pop()?.toLowerCase() ?? "file";
-  const isFolder = hasChildren || fileFolderData.type === "directory";
-  const nodePath = fileFolderData.path ?? fileFolderData.name;
-  const isSelected = !isFolder && activeFileTab?.path === nodePath;
-  const isReactFile = extension === "tsx" || extension === "jsx";
+  const activeTabPath = useActiveFileTabStore((s) => s.activeTabPath);
+  const openTab = useActiveFileTabStore((s) => s.openTab);
 
   const { editorSocket } = useEditorSocketStore();
 
-  const handleDoubleClick = (fileFolderData: TreeNode) => {
-    console.log("Double Clicked on", fileFolderData);
+  if (!fileFolderData) return null;
 
-    editorSocket?.emit("readFile", {
-      pathToFileFolder: fileFolderData.path,
-    });
-  };
+  const hasChildren = fileFolderData.children && fileFolderData.children.length > 0;
+  const extension = fileFolderData.name.split(".").pop()?.toLowerCase() ?? "file";
+  const isFolder = hasChildren || fileFolderData.type === "directory";
+  const nodePath = fileFolderData.path ?? fileFolderData.name;
+  const isSelected = !isFolder && activeTabPath === nodePath;
+  const isReactFile = extension === "tsx" || extension === "jsx";
+
+  const INDENT = 12;
+  const paddingLeft = 8 + depth * INDENT;
+
   const handleClick = () => {
     if (isFolder) {
       setExpanded((prev) => !prev);
     } else {
-      setActiveFileTab(nodePath, "", extension);
+      // Optimistically open tab; socket will fill in value
+      openTab(nodePath, "", extension, "text");
+      editorSocket?.emit("readFile", { pathToFileFolder: nodePath });
     }
   };
 
   return (
-    <div>
+    <div style={{ position: "relative" }}>
+      {/* Indentation guide line */}
+      {depth > 0 && (
+        <span
+          style={{
+            position: "absolute",
+            left: 8 + (depth - 1) * INDENT + 6,
+            top: 0,
+            bottom: 0,
+            width: 1,
+            background: "rgba(255,255,255,0.05)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
+
       <button
         type="button"
         onClick={handleClick}
-        className={`w-full flex items-center h-[22px] pr-2 text-left group transition-colors ${
-          isSelected
-            ? "bg-[#04395e] text-[#ffffff]"
-            : "text-[#cccccc] hover:bg-[#2a2d2e]"
-        }`}
-        style={{ paddingLeft: `${8 + depth * 12}px` }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className="w-full flex items-center h-[22px] pr-1 text-left group relative"
+        style={{
+          paddingLeft,
+          background: isSelected
+            ? "#04395e"
+            : hovered
+            ? "#2a2d2e"
+            : "transparent",
+          color: isSelected ? "#ffffff" : "#cccccc",
+          transition: "background 0.08s",
+        }}
       >
-        <span className="w-4 h-4 flex items-center justify-center shrink-0">
+        {/* Chevron / spacer */}
+        <span className="w-[14px] h-[14px] flex items-center justify-center shrink-0 mr-0.5">
           {isFolder ? (
             <Chevron expanded={expanded} />
           ) : (
-            <span className="w-4" />
+            <span className="w-3" />
           )}
         </span>
 
-        <span className="w-4 h-4 flex items-center justify-center shrink-0 mr-1.5">
+        {/* Icon */}
+        <span className="w-[16px] h-[16px] flex items-center justify-center shrink-0 mr-1.5">
           {isFolder ? (
             <FolderIcon open={expanded} />
           ) : (
@@ -118,16 +130,49 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
           )}
         </span>
 
+        {/* Label */}
         <span
-          onClick={() => handleDoubleClick(fileFolderData)}
-          className={`text-[13px] truncate ${
-            isReactFile && !isSelected ? "text-[#4fc1ff]" : ""
-          }`}
+          className="text-[13px] truncate flex-1"
+          style={{
+            color: isSelected
+              ? "#fff"
+              : isReactFile
+              ? "#4fc1ff"
+              : "#cccccc",
+          }}
         >
           {fileFolderData.name}
         </span>
+
+        {/* Hover actions */}
+        {hovered && !isFolder && (
+          <span className="flex items-center gap-0.5 pr-1 shrink-0 animate-fade-in">
+            <span
+              title="Rename"
+              className="w-[16px] h-[16px] flex items-center justify-center rounded text-[#858585] hover:text-[#ccc] hover:bg-[#3a3a3a]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </span>
+            <span
+              title="Delete"
+              className="w-[16px] h-[16px] flex items-center justify-center rounded text-[#858585] hover:text-[#f48771] hover:bg-[#3a3a3a]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" />
+              </svg>
+            </span>
+          </span>
+        )}
       </button>
 
+      {/* Children */}
       {isFolder && expanded && fileFolderData.children && (
         <div>
           {fileFolderData.children.map((child) => (
