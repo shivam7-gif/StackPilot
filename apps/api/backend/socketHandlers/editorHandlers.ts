@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import { Socket } from "socket.io";
-
+import path from "path";
 interface FilePayload {
   pathToFileFolder: string;
 }
@@ -57,8 +57,16 @@ export const handleEditorSocketEvents = (socket: Socket): void => {
 
   // Read File
   socket.on("readFile", async ({ pathToFileFolder }: FilePayload) => {
-    
+    const ext = path.extname(pathToFileFolder);
+
     try {
+    if([".png",".jpg",".jpeg",".gif",".webp"].includes(ext)){
+      socket.emit("readFileSuccess",{
+        path : pathToFileFolder,
+        fileType : "image",
+      });
+      return ;
+    }
       const content = await fs.readFile(pathToFileFolder, "utf-8");
 
       socket.emit("readFileSuccess", {

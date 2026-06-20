@@ -18,7 +18,15 @@ import { useTreeStructureStore } from "../../store/TreeStructureStore";
 interface IdeShellProps {
   projectName?: string;
 }
-
+type ReadFilePayload =
+  | {
+      path: string;
+      value: string;
+    }
+  | {
+      path: string;
+      fileType: "image";
+    };
 export default function IdeShell({ projectName }: IdeShellProps) {
   const { editorSocket, setEditorSocket } = useEditorSocketStore();
   const params = useParams();
@@ -39,24 +47,7 @@ export default function IdeShell({ projectName }: IdeShellProps) {
   });
 
   const { activeFileTab, setActiveFileTab } = useActiveFileTabStore();
-  useEffect(() => {
-    if (!editorSocket) return;
-    const handleReadFileSuccess = (payload: {
-      path: string;
-      value: string;
-    }) => {
-      console.log(payload);
-      setActiveFileTab(
-        payload.path,
-        payload.value,
-        payload.path.split(".").pop() || "txt",
-      );
-    };
-    editorSocket.on("readFileSuccess", handleReadFileSuccess);
-    return () => {
-      editorSocket.off("readFileSuccess", handleReadFileSuccess);
-    };
-  }, [editorSocket, setActiveFileTab]);
+
   useEffect(() => {
     // const backendUrl = import.meta.env.VITE_BACKEND_URL
     setProjectId(projectIdFromUrl as string);
@@ -79,9 +70,31 @@ export default function IdeShell({ projectName }: IdeShellProps) {
       editorSocketConn.disconnect();
     };
   }, [setEditorSocket, projectIdFromUrl]);
-
-  const activeFileName = activeFileTab?.path.split("/").pop();
-
+  const activeFileName = activeFileTab?.path.split(/[\\/]/).pop();
+  useEffect(() => {
+    if (!editorSocket) return;
+    const handleReadFileSuccess = (payload: ReadFilePayload) => {
+      if ("fileType" in payload) {
+        setActiveFileTab(
+          payload.path,
+          "",
+          payload.path.split(".").pop() || "",
+          "image",
+        );
+        return;
+      }
+      setActiveFileTab(
+        payload.path,
+        payload.value,
+        payload.path.split(".").pop() || "",
+        "text",
+      );
+    };
+    editorSocket.on("readFileSuccess", handleReadFileSuccess);
+    return () => {
+      editorSocket.off("readFileSuccess", handleReadFileSuccess);
+    };
+  }, [editorSocket]);
   return (
     <div className="h-screen w-screen bg-[#1e1e1e] text-[#cccccc] flex flex-col font-sans overflow-hidden">
       <IdeTitleBar projectName={projectName} />

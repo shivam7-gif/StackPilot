@@ -1,29 +1,32 @@
-import {create} from "zustand";
+import { create } from "zustand";
 
 type ActiveFileTab = {
-  path : string ;
-  value : string;
-  extension : string
-}
+  path: string;
+  value: string;
+  extension: string;
+  fileType: "text" | "image";
+} | null;
 type ActiveFileTabStore = {
-  activeFileTab : ActiveFileTab | null;
-  
-  setActiveFileTab : (
-    path : string , 
-    value : string,
-    extension : string
-  )=> void;
+  activeFileTab: ActiveFileTab | null;
+
+  setActiveFileTab: (
+    path: string,
+    value: string,
+    extension: string,
+    fileType: "text" | "image",
+  ) => void;
 };
 
-export const useActiveFileTabStore = create<ActiveFileTabStore>((set)=>({
-  activeFileTab : null,
+export const useActiveFileTabStore = create<ActiveFileTabStore>((set) => ({
+  activeFileTab: null,
 
-  setActiveFileTab : (path , value , extension)=>{
+  setActiveFileTab: (path, value, extension, fileType = "text") => {
     set({
-      activeFileTab :{
+      activeFileTab: {
         path,
-        value , 
-        extension
+        value,
+        extension,
+        fileType,
       },
     });
   },
