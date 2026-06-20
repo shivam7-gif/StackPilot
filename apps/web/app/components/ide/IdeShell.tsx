@@ -12,6 +12,7 @@ import ResizeHandle from "./ResizeHandle";
 import ChatPanel from "../ai/ChatPanel";
 import Terminal from "../Terminal/Terminal";
 import { useParams } from "next/navigation";
+
 // import env from "dotenv"
 import { useTreeStructureStore } from "../../store/TreeStructureStore";
 interface IdeShellProps {
@@ -19,10 +20,9 @@ interface IdeShellProps {
 }
 
 export default function IdeShell({ projectName }: IdeShellProps) {
-  const { setEditorSocket } = useEditorSocketStore();
-  const activeFileTab = useActiveFileTabStore((s) => s.activeFileTab);
-
-  const { projectId: projectIdFromUrl } = useParams();
+  const { editorSocket, setEditorSocket } = useEditorSocketStore();
+  const params = useParams();
+  const { id: projectIdFromUrl } = useParams();
   const { setProjectId, projectId } = useTreeStructureStore();
   const explorer = usePanelResize({
     initialWidth: 260,
@@ -38,19 +38,43 @@ export default function IdeShell({ projectName }: IdeShellProps) {
     direction: "right",
   });
 
+  const { activeFileTab, setActiveFileTab } = useActiveFileTabStore();
+  useEffect(() => {
+    if (!editorSocket) return;
+    const handleReadFileSuccess = (payload: {
+      path: string;
+      value: string;
+    }) => {
+      console.log(payload);
+      setActiveFileTab(
+        payload.path,
+        payload.value,
+        payload.path.split(".").pop() || "txt",
+      );
+    };
+    editorSocket.on("readFileSuccess", handleReadFileSuccess);
+    return () => {
+      editorSocket.off("readFileSuccess", handleReadFileSuccess);
+    };
+  }, [editorSocket, setActiveFileTab]);
   useEffect(() => {
     // const backendUrl = import.meta.env.VITE_BACKEND_URL
     setProjectId(projectIdFromUrl as string);
     // const socket = io(`${process.env.NEXT_PUBLIC_BACKEND_URL}/editor`,{
     //   autoConnect: false,
     // });
-    const editorSocketConn = io("http://localhost:5000/editor?projectId=" + projectIdFromUrl as string, {
-      query: {
-        projectId: projectIdFromUrl as string,
+    const editorSocketConn = io(
+      ("http://localhost:5000/editor?projectId=" + projectIdFromUrl) as string,
+      {
+        query: {
+          projectId: projectIdFromUrl as string,
+        },
       },
-    });
+    );
     setEditorSocket(editorSocketConn);
     editorSocketConn.connect();
+    console.log("projectIdFromUrl : ", projectIdFromUrl);
+    console.log("params : ", params);
     return () => {
       editorSocketConn.disconnect();
     };
@@ -66,7 +90,10 @@ export default function IdeShell({ projectName }: IdeShellProps) {
         <div className="flex flex-1 min-h-0 w-full">
           <ExplorerPanel width={explorer.width} />
           <ResizeHandle onMouseDown={explorer.startDrag} />
-          <EditorArea activeFileName={activeFileName} />
+          <EditorArea
+            activeFileName={activeFileName}
+            value={activeFileTab?.value ?? ""}
+          />
           <ResizeHandle onMouseDown={aiPanel.startDrag} />
           <ChatPanel width={aiPanel.width} />
         </div>

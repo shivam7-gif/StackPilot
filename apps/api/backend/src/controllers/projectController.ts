@@ -17,7 +17,6 @@ import {
 
 const execPromisified = util.promisify(child_process.exec);
 
-// These CLIs MUST create their own folder (will prompt if folder already exists)
 const NAMED_SCAFFOLD_FRAMEWORKS: Framework[] = [
   "react",
   "vue",

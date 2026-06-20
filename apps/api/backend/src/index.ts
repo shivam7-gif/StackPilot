@@ -56,6 +56,8 @@ editorNamespace.on("connection", (socket) => {
   console.log("editor connected");
   const projectId = socket.handshake.query?.projectId;
   console.log("Project id received after connection : ", projectId);
+  console.log("handshake query : ", socket.handshake?.query);
+  console.log("handshake  URL :", socket.handshake.url);
 
   if (projectId) {
     var watcher = chokidar.watch(`./projects/${projectId}`, {

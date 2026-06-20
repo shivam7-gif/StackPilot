@@ -2,8 +2,47 @@
 
 import type { BeforeMount } from "@monaco-editor/react";
 import Editor from "@monaco-editor/react";
+import { useEffect } from "react";
 
-export default function EditorPanel() {
+interface EditorPanelProps {
+  value?: string;
+  language?: string;
+}
+
+export default function EditorPanel({
+  value,
+  language = "typescript",
+}: EditorPanelProps) {
+  const getLanguage = (ext?: string) => {
+    switch (ext) {
+      case "html":
+        return "html";
+      case "css":
+        return "css";
+      case "js":
+      case "jsx":
+        return "javascript";
+      case "ts":
+      case "tsx":
+        return "typescript";
+      case "json":
+        return "json";
+      default:
+        return "plaintext";
+    }
+  };
+
+  const imageExtensions = ["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp"];
+
+  const isImage = language && imageExtensions.includes(language.toLowerCase());
+
+  const imageUrl = value;
+
+  useEffect(() => {
+    console.log("Monaco Language:", language);
+    console.log("mapped :", getLanguage(language));
+  }, [language]);
+
   const handleBeforeMount: BeforeMount = (monaco) => {
     monaco.editor.defineTheme("stackpilot-dark", {
       base: "vs-dark",
@@ -34,34 +73,52 @@ export default function EditorPanel() {
   };
 
   return (
-    <Editor
-      height="100%"
-      defaultLanguage="typescript"
-      defaultValue="// Select a file from the explorer or start coding here"
-      theme="stackpilot-dark"
-      beforeMount={handleBeforeMount}
-      options={{
-        fontSize: 13,
-        fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
-        fontLigatures: true,
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        lineNumbers: "on",
-        renderLineHighlight: "line",
-        padding: { top: 8 },
-        tabSize: 2,
-        cursorBlinking: "smooth",
-        cursorSmoothCaretAnimation: "on",
-        smoothScrolling: true,
-        contextmenu: true,
-        wordWrap: "off",
-        bracketPairColorization: { enabled: true },
-        guides: { indentation: true },
-        scrollbar: {
-          verticalScrollbarSize: 10,
-          horizontalScrollbarSize: 10,
-        },
-      }}
-    />
+    <>
+      {isImage ? (
+        <div className="h-full w-full flex items-center justify-center bg-[#1e1e1e]">
+          <img
+            src={imageUrl}
+            alt="preview"
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
+      ) : (
+        <Editor
+          value={value}
+          language={getLanguage(language)}
+          height="100%"
+          defaultValue="// Select a file from the explorer or start coding here"
+          theme="stackpilot-dark"
+          beforeMount={handleBeforeMount}
+          options={{
+            fontSize: 13,
+            fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+            fontLigatures: true,
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            lineNumbers: "on",
+            renderLineHighlight: "line",
+            padding: { top: 8 },
+            tabSize: 2,
+            cursorBlinking: "smooth",
+            cursorSmoothCaretAnimation: "on",
+            smoothScrolling: true,
+            contextmenu: true,
+            wordWrap: "off",
+            bracketPairColorization: { enabled: true },
+            guides: { indentation: true },
+            scrollbar: {
+              verticalScrollbarSize: 10,
+              horizontalScrollbarSize: 10,
+            },
+            quickSuggestions: true,
+            suggestOnTriggerCharacters: true,
+            parameterHints: {
+              enabled: true,
+            },
+          }}
+        />
+      )}
+    </>
   );
 }

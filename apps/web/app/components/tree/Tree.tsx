@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FileIcon } from "../FileIcon/FileIcon";
 import { useActiveFileTabStore } from "../../store/activeFileTabStore";
+import { useEditorSocketStore } from "@/store/EditorSocketStores";
 
 interface TreeNode {
   name: string;
@@ -34,11 +35,23 @@ function Chevron({ expanded }: { expanded: boolean }) {
 
 function FolderIcon({ open }: { open: boolean }) {
   return open ? (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#dcb67a" className="shrink-0">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="#dcb67a"
+      className="shrink-0"
+    >
       <path d="M20 6h-8l-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2z" />
     </svg>
   ) : (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#dcb67a" className="shrink-0">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="#dcb67a"
+      className="shrink-0"
+    >
       <path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z" />
     </svg>
   );
@@ -53,12 +66,22 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
 
   const hasChildren =
     fileFolderData.children && fileFolderData.children.length > 0;
-  const extension = fileFolderData.name.split(".").pop()?.toLowerCase() ?? "file";
+  const extension =
+    fileFolderData.name.split(".").pop()?.toLowerCase() ?? "file";
   const isFolder = hasChildren || fileFolderData.type === "directory";
   const nodePath = fileFolderData.path ?? fileFolderData.name;
   const isSelected = !isFolder && activeFileTab?.path === nodePath;
   const isReactFile = extension === "tsx" || extension === "jsx";
 
+  const { editorSocket } = useEditorSocketStore();
+
+  const handleDoubleClick = (fileFolderData: TreeNode) => {
+    console.log("Double Clicked on", fileFolderData);
+
+    editorSocket?.emit("readFile", {
+      pathToFileFolder: fileFolderData.path,
+    });
+  };
   const handleClick = () => {
     if (isFolder) {
       setExpanded((prev) => !prev);
@@ -96,6 +119,7 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
         </span>
 
         <span
+          onClick={() => handleDoubleClick(fileFolderData)}
           className={`text-[13px] truncate ${
             isReactFile && !isSelected ? "text-[#4fc1ff]" : ""
           }`}
