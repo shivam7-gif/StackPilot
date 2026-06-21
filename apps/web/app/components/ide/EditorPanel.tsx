@@ -6,12 +6,13 @@ import { configureMonaco, editorOptions } from "@/lib/monaco/setup";
 import type { editor } from "monaco-editor";
 import { useEditorSocketStore } from "@/store/EditorSocketStores";
 import { useActiveFileTabStore } from "@/store/activeFileTabStore";
+import { useMemo, useEffect } from "react";
+
 interface EditorPanelProps {
   value?: string;
   language?: string;
 }
 import debounce from "lodash/debounce";
-import { useMemo } from "react";
 export default function EditorPanel({
   value,
   language = "typescript",
@@ -55,6 +56,12 @@ export default function EditorPanel({
       }, 1000),
     [editorSocket],
   );
+  useEffect(() => {
+    return () => {
+      debouncedSave.flush();
+      debouncedSave.cancel();
+    };
+  }, [debouncedSave]);
   const handleChange = (
     nextValue: string | undefined,
     e: editor.IModelContentChangedEvent,

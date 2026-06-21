@@ -6,9 +6,14 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs/promises";
 import { Server } from "socket.io";
-import chokidar from "chokidar";
 import { handleEditorSocketEvents } from "../socketHandlers/editorHandlers.js";
 import { handleProjectSocket } from "./sockets/project.socket.js";
+import {
+  acquireProjectWatcher,
+  emitRoomPresence,
+  getProjectRoomId,
+  releaseProjectWatcher,
+} from "./sockets/editorRooms.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
@@ -52,30 +57,41 @@ io.on("connection", (socket) => {
   handleProjectSocket(socket);
 });
 const editorNamespace = io.of("/editor");
-editorNamespace.on("connection", (socket) => {
-  console.log("editor connected");
-  const projectId = socket.handshake.query?.projectId;
-  console.log("Project id received after connection : ", projectId);
-  console.log("handshake query : ", socket.handshake?.query);
-  console.log("handshake  URL :", socket.handshake.url);
+editorNamespace.on("connection", async (socket) => {
+  const rawProjectId = socket.handshake.query?.projectId;
+  const projectId = Array.isArray(rawProjectId)
+    ? rawProjectId[0]
+    : rawProjectId;
 
-  if (projectId) {
-    var watcher = chokidar.watch(`./projects/${projectId}`, {
-      ignored: (path) => path.includes("node_modules"),
-      persistent: true, //keeps the watcher in running state till the time app is running
-      awaitWriteFinish: {
-        stabilityThreshold: 2000, //ensures statbility of files before triggering events
-      },
-      ignoreInitial: true, // ignore the initial files in the directory
-    });
-    watcher.on("all", (event, path) => {
-      console.log(event, path);
-    });
+  if (!projectId || typeof projectId !== "string") {
+    socket.emit("error", { data: "projectId is required" });
+    socket.disconnect(true);
+    return;
   }
-  handleEditorSocketEvents(socket);
+
+  const roomId = getProjectRoomId(projectId);
+  await socket.join(roomId);
+  socket.data.projectId = projectId;
+
+  console.log(`Editor connected: ${socket.id} joined ${roomId}`);
+
+  acquireProjectWatcher(projectId, editorNamespace);
+  await emitRoomPresence(editorNamespace, projectId);
+
+  const clientsInRoom = await editorNamespace.in(roomId).fetchSockets();
+  socket.emit("room:joined", {
+    projectId,
+    roomId,
+    socketId: socket.id,
+    users: clientsInRoom.length,
+  });
+
+  handleEditorSocketEvents(socket, projectId, editorNamespace);
+
   socket.on("disconnect", async () => {
-    await watcher.close();
-    console.log("editor disconnected");
+    await releaseProjectWatcher(projectId);
+    await emitRoomPresence(editorNamespace, projectId);
+    console.log(`Editor disconnected: ${socket.id} left ${roomId}`);
   });
 });
 server.listen(PORT, () => {
