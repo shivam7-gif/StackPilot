@@ -21,7 +21,7 @@ export default function Ide() {
       if (!id) return;
       try {
         const res = await axios.get(
-          `http://localhost:5000/projects/${id}/meta`
+          `http://localhost:5000/projects/${id}/meta`,
         );
         setProjectName(res.data.projectName ?? "");
       } catch (err) {
@@ -33,7 +33,5 @@ export default function Ide() {
 
   if (!id) return null;
 
-  return (
-    <IdeShell projectName={projectName} />
-  );
+  return <IdeShell projectName={projectName} />;
 }

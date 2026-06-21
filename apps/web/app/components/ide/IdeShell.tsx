@@ -5,7 +5,6 @@ import { io } from "socket.io-client";
 import { usePanelResize } from "../../hooks/usePanelResize";
 import { useVerticalResize } from "../../hooks/useVerticalResize";
 import { useEditorSocketStore } from "../../store/EditorSocketStores";
-import { useActiveFileTabStore } from "../../store/activeFileTabStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import IdeTitleBar from "./IdeTitleBar";
 import ExplorerPanel from "./ExplorerPanel";
@@ -20,15 +19,10 @@ interface IdeShellProps {
   projectName?: string;
 }
 
-type ReadFilePayload =
-  | { path: string; value: string }
-  | { path: string; fileType: "image" };
-
 export default function IdeShell({ projectName }: IdeShellProps) {
-  const { editorSocket, setEditorSocket } = useEditorSocketStore();
+  const { setEditorSocket, clearEditorSocket } = useEditorSocketStore();
   const { id: projectIdFromUrl } = useParams();
   const { setProjectId } = useTreeStructureStore();
-  const { openTab } = useActiveFileTabStore();
   const { theme } = useThemeStore();
 
   // Horizontal panel resize
@@ -62,22 +56,11 @@ export default function IdeShell({ projectName }: IdeShellProps) {
     );
     setEditorSocket(editorSocketConn);
     editorSocketConn.connect();
-    return () => { editorSocketConn.disconnect(); };
-  }, [setEditorSocket, projectIdFromUrl, setProjectId]);
-
-  // readFileSuccess handler
-  useEffect(() => {
-    if (!editorSocket) return;
-    const handleReadFileSuccess = (payload: ReadFilePayload) => {
-      if ("fileType" in payload) {
-        openTab(payload.path, "", payload.path.split(".").pop() || "", "image");
-        return;
-      }
-      openTab(payload.path, payload.value, payload.path.split(".").pop() || "", "text");
+    return () => {
+      clearEditorSocket();
+      editorSocketConn.disconnect();
     };
-    editorSocket.on("readFileSuccess", handleReadFileSuccess);
-    return () => { editorSocket.off("readFileSuccess", handleReadFileSuccess); };
-  }, [editorSocket, openTab]);
+  }, [setEditorSocket, clearEditorSocket, projectIdFromUrl, setProjectId]);
 
   return (
     <div
