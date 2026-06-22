@@ -234,6 +234,45 @@ export const handleEditorSocketEvents = (
     }
   });
 
+  // Rename File or Folder
+  socket.on(
+    "renamePath",
+    async ({
+      pathToFileFolder,
+      newPath,
+    }: FilePayload & { newPath: string }) => {
+      if (!pathToFileFolder || !newPath) {
+        socket.emit("error", { data: "Invalid renamePath payload" });
+        return;
+      }
+
+      if (rejectInvalidPath(pathToFileFolder) || rejectInvalidPath(newPath)) {
+        return;
+      }
+
+      try {
+        await fs.rename(pathToFileFolder, newPath);
+
+        socket.emit("renamePathSuccess", {
+          oldPath: pathToFileFolder,
+          newPath,
+        });
+
+        editorNamespace.to(roomId).emit("fileSystemChanged", {
+          type: "renamePath",
+          path: pathToFileFolder,
+          newPath,
+        });
+      } catch (error) {
+        console.error("Error renaming path:", error);
+
+        socket.emit("error", {
+          data: "Error renaming file or folder",
+        });
+      }
+    },
+  );
+
   // Delete Folder
   socket.on("deleteFolder", async ({ pathToFileFolder }: FilePayload) => {
     if (!pathToFileFolder) {

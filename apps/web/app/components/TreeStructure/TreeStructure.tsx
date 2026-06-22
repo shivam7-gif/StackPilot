@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useTreeStructureStore } from "../../store/TreeStructureStore";
 import { Tree } from "../Tree/tree";
+import { useFileContextMenuStore } from "@/store/fileContextMenuStore";
+import { FileContextMenu } from "../ContextMenu/FileContentMenu";
 
 export const TreeStructure = () => {
   const { treeStructure, setTreeStructure, isLoading, error } =
@@ -11,6 +13,26 @@ export const TreeStructure = () => {
 
   const params = useParams();
   const projectId = params.id as string;
+  const {
+    file,
+    isOpen: isFileContextOpen,
+    x: fileContextX,
+    y: fileContextY,
+    isFolder,
+  } = useFileContextMenuStore();
+
+  const contextMenu =
+    isFileContextOpen &&
+    fileContextX != null &&
+    fileContextY != null &&
+    file ? (
+      <FileContextMenu
+        x={fileContextX}
+        y={fileContextY}
+        path={file}
+        isFolder={isFolder}
+      />
+    ) : null;
 
   useEffect(() => {
     if (!projectId) return;
@@ -41,15 +63,21 @@ export const TreeStructure = () => {
 
   if (!treeStructure) {
     return (
-      <div className="px-3 py-3 text-[11px] text-[#666]">
-        No files in this project yet.
-      </div>
+      <>
+        {contextMenu}
+        <div className="px-3 py-3 text-[11px] text-[#666]">
+          No files in this project yet.
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="py-1">
-      <Tree fileFolderData={treeStructure} depth={0} />
-    </div>
+    <>
+      {contextMenu}
+      <div className="py-1">
+        <Tree fileFolderData={treeStructure} depth={0} />
+      </div>
+    </>
   );
 };

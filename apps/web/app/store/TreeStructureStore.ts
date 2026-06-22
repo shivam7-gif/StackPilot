@@ -34,7 +34,7 @@ export const useTreeStructureStore = create<TreeStructureState>((set) => ({
     }
 
     try {
-      set({ isLoading: true, error: null });
+      set({ isLoading: true, error: null, projectId });
       const data = await queryClient.fetchQuery({
         queryKey: ["projectTree", projectId],
         queryFn: () => getProjectTree({ projectId }),
