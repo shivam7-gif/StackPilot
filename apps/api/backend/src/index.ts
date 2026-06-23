@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import fs from "fs/promises";
 import { Server } from "socket.io";
 import { handleEditorSocketEvents } from "../socketHandlers/editorHandlers.js";
+import { handleTerminalSocket } from "../socketHandlers/terminalHandlers.js";
 import { handleProjectSocket } from "./sockets/project.socket.js";
 import {
   acquireProjectWatcher,
@@ -93,6 +94,22 @@ editorNamespace.on("connection", async (socket) => {
     await emitRoomPresence(editorNamespace, projectId);
     console.log(`Editor disconnected: ${socket.id} left ${roomId}`);
   });
+});
+const terminalNamespace = io.of("/terminal");
+terminalNamespace.on("connection", (socket) => {
+  const rawProjectId = socket.handshake.query?.projectId;
+  const projectId = Array.isArray(rawProjectId)
+    ? rawProjectId[0]
+    : rawProjectId;
+
+  if (!projectId || typeof projectId !== "string") {
+    socket.emit("error", { data: "projectId is required" });
+    socket.disconnect(true);
+    return;
+  }
+
+  console.log(`Terminal connected: ${socket.id} (${projectId})`);
+  handleTerminalSocket(socket, projectId, terminalNamespace);
 });
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

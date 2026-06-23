@@ -248,3 +248,24 @@ body {
 .chat-input-focused {
   animation: glowPulse 2s ease-in-out infinite;
 }
+
+/* ─── xterm (Cursor-style terminal panel) ────────────────── */
+.xterm {
+  height: 100%;
+  padding: 4px 0;
+}
+.xterm-viewport {
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ide-scrollbar) transparent;
+}
+.xterm-viewport::-webkit-scrollbar {
+  width: 6px;
+}
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background-color: var(--ide-scrollbar);
+  border-radius: 3px;
+}
+.xterm-screen {
+  height: 100%;
+}

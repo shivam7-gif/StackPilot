@@ -11,7 +11,7 @@ import ExplorerPanel from "./ExplorerPanel";
 import EditorArea from "./EditorArea";
 import ResizeHandle from "./ResizeHandle";
 import ChatPanel from "../ai/ChatPanel";
-import Terminal from "../Terminal/Terminal";
+import Terminal from "../Terminal/BrowserTerminal";
 import { useParams } from "next/navigation";
 import { useTreeStructureStore } from "../../store/TreeStructureStore";
 
