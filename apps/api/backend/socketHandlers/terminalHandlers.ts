@@ -141,7 +141,7 @@ export function handleTerminalSocket(
       console.error(`Docker terminal failed for ${projectId}, falling back to local shell`, err);
       socket.emit(
         "shell-output",
-        "\r\n\x1b[33m[Docker sandbox unavailable — using local shell]\x1b[0m\r\n",
+        "\r\nHELLO FROM BACKEND\r\n"
       );
       cleanup = await attachLocalShell(socket, projectId);
     }

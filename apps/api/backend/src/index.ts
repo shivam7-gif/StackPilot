@@ -15,6 +15,7 @@ import {
   getProjectRoomId,
   releaseProjectWatcher,
 } from "./sockets/editorRooms.js";
+import { handleContainerCreate } from "../containers/handleContainerCreate.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
@@ -96,7 +97,7 @@ editorNamespace.on("connection", async (socket) => {
   });
 });
 const terminalNamespace = io.of("/terminal");
-terminalNamespace.on("connection", (socket) => {
+terminalNamespace.on("connection", async (socket) => {
   const rawProjectId = socket.handshake.query?.projectId;
   const projectId = Array.isArray(rawProjectId)
     ? rawProjectId[0]
@@ -107,10 +108,22 @@ terminalNamespace.on("connection", (socket) => {
     socket.disconnect(true);
     return;
   }
-
-  console.log(`Terminal connected: ${socket.id} (${projectId})`);
-  handleTerminalSocket(socket, projectId, terminalNamespace);
-});
+  try {
+    const containerInfo = await handleContainerCreate(projectId);
+    console.log(`Terminal connected : ${socket.id} ${projectId}, container ${containerInfo.containerId}`);
+    socket.emit("container:ready", {
+      containerId: containerInfo.containerId,
+      hostPort5173: containerInfo.hostPort5173,
+    });
+  }
+  catch (error) {
+    console.error("Failed to create Container", error);
+    socket.emit("error", {
+      data: "Failed to start sandbox container",
+    })
+  }
+}
+);
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
