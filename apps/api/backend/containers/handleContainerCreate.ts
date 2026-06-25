@@ -3,6 +3,7 @@ import type { ContainerInspectInfo } from "dockerode";
 import { resolveProjectHostPath } from "./resolveProjectHostPath.js";
 
 const docker = new Docker();
+
 const SANDBOX_IMAGE = "sandbox";
 const CONTAINER_PORT = "5173/tcp";
 
@@ -13,30 +14,32 @@ export interface ProjectContainer {
 }
 
 function containerNameForProject(projectId: string): string {
-  const safeId = projectId.replace(/[^a-zA-Z0-9_.-]/g, "-");
-  return `stackpilot-${safeId}`;
+  return `stackpilot-${projectId.replace(/[^a-zA-Z0-9_.-]/g, "-")}`;
 }
 
 function readHostPort5173(info: ContainerInspectInfo): string | null {
   const bindings = info.NetworkSettings.Ports?.[CONTAINER_PORT];
+
   return bindings?.[0]?.HostPort ?? null;
 }
 
-async function getOrCreateContainer(
-  projectId: string,
-  hostProjectPath: string,
-): Promise<ProjectContainer> {
-  const name = containerNameForProject(projectId);
-  const existing = docker.getContainer(name);
+async function getExistingContainer(
+  name: string
+): Promise<ProjectContainer | null> {
+  const container = docker.getContainer(name);
 
   try {
-    const info = await existing.inspect();
+    const info = await container.inspect();
+
     if (!info.State.Running) {
-      await existing.start();
+      console.log(`Starting existing container ${name}`);
+      await container.start();
     }
-    const refreshed = await existing.inspect();
+
+    const refreshed = await container.inspect();
+
     return {
-      container: existing,
+      container,
       containerId: refreshed.Id,
       hostPort5173: readHostPort5173(refreshed),
     };
@@ -45,41 +48,69 @@ async function getOrCreateContainer(
       err && typeof err === "object" && "statusCode" in err
         ? (err as { statusCode?: number }).statusCode
         : undefined;
-    if (statusCode !== 404) {
-      throw err;
+
+    if (statusCode === 404) {
+      return null;
     }
+
+    throw err;
   }
+}
+
+async function createContainer(
+  projectId: string,
+  hostProjectPath: string
+): Promise<ProjectContainer> {
+  const name = containerNameForProject(projectId);
 
   const container = await docker.createContainer({
     name,
+
     Image: SANDBOX_IMAGE,
+
+    Tty: true,
+
     AttachStdin: true,
     AttachStdout: true,
     AttachStderr: true,
-    Tty: true,
+
     User: "sandbox",
+
     WorkingDir: "/home/sandbox/app",
+
     Cmd: ["sleep", "infinity"],
+
+    Env: ["HOST=0.0.0.0"],
+
     ExposedPorts: {
       [CONTAINER_PORT]: {},
     },
-    Env: ["HOST=0.0.0.0"],
+
     HostConfig: {
       Binds: [`${hostProjectPath}:/home/sandbox/app`],
+
       PortBindings: {
-        [CONTAINER_PORT]: [{ HostPort: "0" }],
+        [CONTAINER_PORT]: [
+          {
+            HostPort: "0",
+          },
+        ],
       },
     },
+
     Labels: {
       "stackpilot.projectId": projectId,
     },
   });
 
   console.log(`Container created for ${projectId}: ${container.id}`);
+
   await container.start();
+
   console.log(`Container started for ${projectId}`);
 
   const info = await container.inspect();
+
   return {
     container,
     containerId: info.Id,
@@ -87,13 +118,30 @@ async function getOrCreateContainer(
   };
 }
 
-export async function ensureProjectContainer(
+async function getOrCreateContainer(
   projectId: string,
+  hostProjectPath: string
+): Promise<ProjectContainer> {
+  const name = containerNameForProject(projectId);
+
+  const existing = await getExistingContainer(name);
+
+  if (existing) {
+    return existing;
+  }
+
+  return createContainer(projectId, hostProjectPath);
+}
+
+export async function ensureProjectContainer(
+  projectId: string
 ): Promise<ProjectContainer> {
   console.log("Ensuring sandbox container for project", projectId);
+
   const hostProjectPath = await resolveProjectHostPath(projectId);
+
   return getOrCreateContainer(projectId, hostProjectPath);
 }
 
-/** @deprecated Use ensureProjectContainer */
+/** @deprecated */
 export const handleContainerCreate = ensureProjectContainer;

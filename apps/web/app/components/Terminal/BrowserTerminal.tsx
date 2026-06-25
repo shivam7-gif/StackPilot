@@ -97,7 +97,6 @@ export default function BrowserTerminal({
       query: { projectId: projectIdFromUrl as string },
     });
     socketRef.current = socket;
-
     socket.on("connect", () => {
       setConnected(true);
       fitTerminal();

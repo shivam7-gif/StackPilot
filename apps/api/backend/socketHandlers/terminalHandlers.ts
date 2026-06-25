@@ -14,9 +14,35 @@ function getDefaultShell(): string {
   return process.env.SHELL || "bash";
 }
 
+function createTerminalBanner(
+  projectId: string,
+  projectName: string,
+  cwd: string,
+  previewUrl?: string
+) {
+  return `
+clear
+
+echo ""
+echo "┌─ StackPilot"
+echo "├─ Project : ${projectName}"
+echo "├─ ID      : ${projectId}"
+echo "├─ Path    : ${cwd}"
+echo "└─ Preview : ${previewUrl ?? "Not Running"}"
+echo ""
+
+export TERM=xterm-256color
+
+alias ll='ls -lah --color=auto'
+alias gs='git status'
+
+export PS1='\\[\\e[38;5;45m\\]➜\\[\\e[0m\\] \\[\\e[38;5;82m\\]\\W\\[\\e[0m\\] \\[\\e[38;5;214m\\]$(git branch --show-current 2>/dev/null)\\[\\e[0m\\] $ '
+
+`;
+}
 async function attachLocalShell(
   socket: Socket,
-  projectId: string,
+  projectId: string
 ): Promise<() => void> {
   let ptyProcess: IPty | null = null;
 
@@ -64,10 +90,9 @@ async function attachLocalShell(
     ptyProcess = null;
   };
 }
-
 async function attachDockerShell(
   socket: Socket,
-  projectId: string,
+  projectId: string
 ): Promise<() => void> {
   const { container, hostPort5173 } = await ensureProjectContainer(projectId);
 
@@ -78,7 +103,17 @@ async function attachDockerShell(
       previewUrl: `http://localhost:${hostPort5173}`,
     });
   }
+  const workspacePath = "/home/sandbox/app";
+  const projectName = projectId.slice(0, 8);
 
+  stream.write(
+    createTerminalBanner(
+      projectId,
+      projectName,
+      workspacePath,
+      hostPort5173 ? `http://localhost:${hostPort5173}` : undefined
+    )
+  );
   const exec = await container.exec({
     Cmd: ["/bin/bash", "-l"],
     AttachStdin: true,
@@ -88,61 +123,106 @@ async function attachDockerShell(
     WorkingDir: "/home/sandbox/app",
     User: "sandbox",
   });
-
+  console.log("Starting exec...");
   const stream = (await exec.start({
     hijack: true,
     stdin: true,
   })) as Duplex;
+  console.log("Exec started");
+  stream.write(`
+export PS1='\\[\\e[38;5;39m\\]➜ \\[\\e[38;5;82m\\]\\W\\[\\e[0m\\] \\[\\e[33m\\]$(git branch --show-current 2>/dev/null)\\[\\e[0m\\] $ '
+clear
+\n`);
+  try {
+    await exec.resize({
+      w: 80,
+      h: 24,
+    });
+  } catch {
+    // ignore
+  }
 
-  stream.on("data", (chunk: Buffer) => {
+  const onData = (chunk: Buffer) => {
     socket.emit("shell-output", chunk.toString("utf8"));
-  });
+  };
 
-  stream.on("end", () => {
+  const onEnd = () => {
     socket.emit("shell-output", "\r\n\x1b[90m[Process exited]\x1b[0m\r\n");
-  });
+  };
+
+  const onError = (err: Error) => {
+    console.error(`Docker stream error (${projectId})`, err);
+
+    socket.emit(
+      "shell-output",
+      "\r\n\x1b[31m[Terminal connection lost]\x1b[0m\r\n"
+    );
+  };
+
+  stream.on("data", onData);
+  stream.on("end", onEnd);
+  stream.on("error", onError);
 
   console.log(`Docker terminal attached for ${projectId}`);
 
   const onInput = (data: string) => {
-    stream.write(data);
+    if (!stream.destroyed) {
+      stream.write(data);
+    }
   };
 
   const onResize = async ({ cols, rows }: { cols: number; rows: number }) => {
-    if (cols <= 0 || rows <= 0) return;
+    if (cols <= 0 || rows <= 0) {
+      return;
+    }
+
     try {
-      await exec.resize({ w: cols, h: rows });
+      await exec.resize({
+        w: cols,
+        h: rows,
+      });
     } catch {
-      // ignore resize races during spawn/teardown
+      // ignore resize race
     }
   };
 
   socket.on("shell-input", onInput);
+
   socket.on("shell-resize", onResize);
 
   return () => {
     socket.off("shell-input", onInput);
+
     socket.off("shell-resize", onResize);
-    stream.destroy();
+
+    stream.off("data", onData);
+    stream.off("end", onEnd);
+    stream.off("error", onError);
+
+    if (!stream.destroyed) {
+      stream.destroy();
+    }
+
+    console.log(`Docker terminal cleaned up for ${projectId}`);
   };
 }
-
 export function handleTerminalSocket(
   socket: Socket,
   projectId: string,
-  _namespace: Namespace,
+  _namespace: Namespace
 ): void {
   let cleanup: (() => void) | null = null;
 
   void (async () => {
     try {
+      console.log("Attaching docker shell");
       cleanup = await attachDockerShell(socket, projectId);
     } catch (err) {
-      console.error(`Docker terminal failed for ${projectId}, falling back to local shell`, err);
-      socket.emit(
-        "shell-output",
-        "\r\nHELLO FROM BACKEND\r\n"
+      console.error(
+        `Docker terminal failed for ${projectId}, falling back to local shell`,
+        err
       );
+      socket.emit("shell-output", "\r\nHELLO FROM BACKEND\r\n");
       cleanup = await attachLocalShell(socket, projectId);
     }
   })();

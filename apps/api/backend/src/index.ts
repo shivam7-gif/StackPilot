@@ -42,7 +42,7 @@ app.get("/_debug/project-records", async (_req, res) => {
   try {
     const recordsPath = path.join(
       __dirname,
-      "../projects/project-records.json",
+      "../projects/project-records.json"
     );
     const raw = await fs.readFile(recordsPath, "utf8");
     res.status(200).json(JSON.parse(raw || "[]"));
@@ -96,34 +96,48 @@ editorNamespace.on("connection", async (socket) => {
     console.log(`Editor disconnected: ${socket.id} left ${roomId}`);
   });
 });
+
 const terminalNamespace = io.of("/terminal");
+
 terminalNamespace.on("connection", async (socket) => {
   const rawProjectId = socket.handshake.query?.projectId;
+
   const projectId = Array.isArray(rawProjectId)
     ? rawProjectId[0]
     : rawProjectId;
 
   if (!projectId || typeof projectId !== "string") {
-    socket.emit("error", { data: "projectId is required" });
+    socket.emit("error", {
+      data: "projectId is required",
+    });
+
     socket.disconnect(true);
     return;
   }
+
   try {
     const containerInfo = await handleContainerCreate(projectId);
-    console.log(`Terminal connected : ${socket.id} ${projectId}, container ${containerInfo.containerId}`);
+
+    console.log(
+      `Terminal connected : ${socket.id} ${projectId}, container ${containerInfo.containerId}`
+    );
+
     socket.emit("container:ready", {
       containerId: containerInfo.containerId,
       hostPort5173: containerInfo.hostPort5173,
     });
-  }
-  catch (error) {
-    console.error("Failed to create Container", error);
+
+    // IMPORTANT
+    handleTerminalSocket(socket, projectId, terminalNamespace);
+  } catch (error) {
+    console.error("Failed to create container", error);
+
     socket.emit("error", {
       data: "Failed to start sandbox container",
-    })
+    });
   }
-}
-);
+});
+
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
