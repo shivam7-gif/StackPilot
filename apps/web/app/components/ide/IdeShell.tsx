@@ -6,6 +6,7 @@ import { usePanelResize } from "../../hooks/usePanelResize";
 import { useVerticalResize } from "../../hooks/useVerticalResize";
 import { useEditorSocketStore } from "../../store/EditorSocketStores";
 import { useThemeStore } from "../../store/useThemeStore";
+import {ActivePreviewStore} from "../../store/activePreviewStore";
 import IdeTitleBar from "./IdeTitleBar";
 import ExplorerPanel from "./ExplorerPanel";
 import EditorArea from "./EditorArea";
@@ -24,6 +25,10 @@ export default function IdeShell({ projectName }: IdeShellProps) {
   const { id: projectIdFromUrl } = useParams();
   const { setProjectId } = useTreeStructureStore();
   const { theme } = useThemeStore();
+
+  // Preview store
+  const activeView = ActivePreviewStore((state) => state.activeView);
+  const previewUrl = ActivePreviewStore((state) => state.previewUrl);
 
   // Horizontal panel resize
   const explorer = usePanelResize({
@@ -50,12 +55,17 @@ export default function IdeShell({ projectName }: IdeShellProps) {
   // Socket setup
   useEffect(() => {
     setProjectId(projectIdFromUrl as string);
+
     const editorSocketConn = io(
       `http://localhost:5000/editor?projectId=${projectIdFromUrl}`,
-      { query: { projectId: projectIdFromUrl as string } }
+      {
+        query: { projectId: projectIdFromUrl as string },
+      }
     );
+
     setEditorSocket(editorSocketConn);
     editorSocketConn.connect();
+
     return () => {
       clearEditorSocket();
       editorSocketConn.disconnect();
@@ -73,11 +83,24 @@ export default function IdeShell({ projectName }: IdeShellProps) {
       <div className="flex flex-1 min-h-0 w-full flex-col">
         <div className="flex flex-1 min-h-0 w-full">
           <ExplorerPanel width={explorer.width} />
+
           <ResizeHandle onMouseDown={explorer.startDrag} />
-          <EditorArea />
+
+          {activeView === "editor" ? (
+            <EditorArea />
+          ) : (
+            <iframe
+              src={previewUrl ?? ""}
+              title="Preview"
+              className="flex-1 w-full h-full border-0 bg-white"
+            />
+          )}
+
           <ResizeHandle onMouseDown={aiPanel.startDrag} />
+
           <ChatPanel width={aiPanel.width} />
         </div>
+
         <Terminal height={terminal.height} onResizeStart={terminal.startDrag} />
       </div>
     </div>
