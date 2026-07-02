@@ -1,6 +1,7 @@
 import { spawn } from "child_process";
 import crypto from "crypto";
 import fs from "fs/promises";
+import fsSync from "fs";
 import path from "path";
 import { saveProjectRecord } from "../services/projectStore.js";
 import {
@@ -8,6 +9,128 @@ import {
   type Framework,
   PROJECTS_DIR,
 } from "../services/project.service.js";
+
+const runEngineWithSocket = async (
+  prompt: string,
+  socket: any
+): Promise<{ projectId: string; projectName: string }> => {
+  const workspaceRoot = path.resolve(process.cwd(), "../../..");
+  const engineDir = path.join(workspaceRoot, "stackpilotAiEngine");
+  const engineScript = path.join(engineDir, "index.ts");
+  const localTsxCli = path.join(
+    workspaceRoot,
+    "apps",
+    "api",
+    "backend",
+    "node_modules",
+    "tsx",
+    "dist",
+    "cli.mjs"
+  );
+
+  socket.emit(
+    "engine-output",
+    "\n[stackpilot-ai] Starting engine session...\n"
+  );
+
+  const useLocalTsx = fsSync.existsSync(localTsxCli);
+  const command = process.execPath;
+  const args = useLocalTsx
+    ? [localTsxCli, engineScript, prompt]
+    : ["--import", "tsx", engineScript, prompt];
+
+  const child = spawn(command, args, {
+    cwd: engineDir,
+    env: { ...process.env, STACKPILOT_PROMPT: prompt },
+    shell: false,
+    windowsHide: true,
+  });
+
+  let resultLine: string | null = null;
+
+  const processLine = (line: string) => {
+    if (line.startsWith("STACKPILOT_RESULT:")) {
+      resultLine = line.slice("STACKPILOT_RESULT:".length).trim();
+      // Don't stream the raw JSON to the client
+      return;
+    }
+    socket.emit("engine-output", line + "\n");
+  };
+
+  // Buffer partial lines across chunks
+  let lineBuffer = "";
+  const handleChunk = (data: Buffer) => {
+    lineBuffer += data.toString();
+    const lines = lineBuffer.split("\n");
+    lineBuffer = lines.pop() ?? "";
+    lines.forEach(processLine);
+  };
+
+  child.stdout.on("data", handleChunk);
+  child.stderr.on("data", (data: Buffer) => {
+    socket.emit("engine-output", data.toString());
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    child.on("close", (code) => {
+      // Flush any remaining buffer
+      if (lineBuffer) processLine(lineBuffer);
+      if (code === 0 || resultLine) {
+        resolve();
+      } else {
+        reject(new Error(`Engine exited with code ${code}`));
+      }
+    });
+    child.on("error", reject);
+  });
+
+  // ── Parse the STACKPILOT_RESULT and write files ──────────────────
+  let generatedFiles: { path: string; code: string }[] = [];
+  let projectName = "stackpilot-project";
+
+  if (resultLine) {
+    try {
+      const parsed = JSON.parse(resultLine);
+      generatedFiles = parsed.files ?? [];
+      projectName = parsed.projectName ?? projectName;
+    } catch {
+      socket.emit("engine-output", "\n[stackpilot-ai] Could not parse engine result JSON.\n");
+    }
+  }
+
+  // Create project folder and write files
+  const projectId = crypto.randomUUID();
+  const projectDir = path.join(PROJECTS_DIR, projectId);
+  await fs.mkdir(projectDir, { recursive: true });
+
+  socket.emit("engine-output", `\n[stackpilot-ai] Writing ${generatedFiles.length} files...\n`);
+
+  await Promise.all(
+    generatedFiles.map(async (file) => {
+      // Sanitise path — prevent directory traversal
+      const safePath = file.path.replace(/^\/+/, "").replace(/\.\.\//g, "");
+      const fullPath = path.join(projectDir, safePath);
+      await fs.mkdir(path.dirname(fullPath), { recursive: true });
+      await fs.writeFile(fullPath, file.code, "utf8");
+      socket.emit("engine-output", `✓ ${safePath}\n`);
+    })
+  );
+
+  // Save project record so the IDE can find it
+  await saveProjectRecord({
+    projectId,
+    projectName,
+    baseName: projectName,
+    folderName: projectId,
+    createdAt: new Date().toISOString(),
+  });
+
+  socket.emit("engine-output", "\n[stackpilot-ai] Engine session complete.\n");
+  socket.emit("engine-status", { status: "complete" });
+
+  return { projectId, projectName };
+};
+
 
 interface ProjectCreatePayload {
   frontend?: Framework;
@@ -46,6 +169,31 @@ const runSpawn = (
 };
 
 export const handleProjectSocket = (socket: any) => {
+  socket.on("engine:run", async ({ prompt }: { prompt?: string }) => {
+    if (!prompt?.trim()) {
+      socket.emit(
+        "engine-output",
+        "\n[stackpilot-ai] Please provide a prompt.\n"
+      );
+      socket.emit("engine-status", {
+        status: "error",
+        error: "No prompt provided",
+      });
+      return;
+    }
+
+    try {
+      socket.emit("engine-output", `\n[stackpilot-ai] Prompt: ${prompt}\n`);
+      const { projectId, projectName } = await runEngineWithSocket(prompt, socket);
+
+      // Redirect the dashboard to the IDE for the newly created project
+      socket.emit("project-done", { projectId, projectName });
+    } catch (error: any) {
+      socket.emit("engine-output", `\n[stackpilot-ai] ${error.message}\n`);
+      socket.emit("engine-status", { status: "error", error: error.message });
+    }
+  });
+
   socket.on(
     "createProject",
     async ({ frontend, backend, projectName }: ProjectCreatePayload) => {

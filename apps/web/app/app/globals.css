@@ -2,94 +2,151 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════
-   DARK THEME (default)
+   DARK THEME  — Playground-inspired, rich & minimal
 ═══════════════════════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
-  --ide-bg:               #1e1e1e;
-  --ide-sidebar-bg:       #181818;
-  --ide-tab-active-bg:    #1e1e1e;
-  --ide-tab-inactive-bg:  #2d2d2d;
-  --ide-border:           #2b2b2b;
-  --ide-accent:           #007fd4;
-  --ide-accent-hover:     #1177bb;
-  --ide-text:             #cccccc;
-  --ide-text-bright:      #e0e0e0;
-  --ide-text-muted:       #858585;
-  --ide-text-dim:         #555555;
-  --ide-hover:            #2a2d2e;
-  --ide-hover-strong:     #333333;
-  --ide-selected:         #04395e;
-  --ide-selected-text:    #ffffff;
-  --ide-statusbar-bg:     #007acc;
-  --ide-folder-color:     #dcb67a;
-  --ide-react-color:      #4fc1ff;
-  --ide-input-bg:         #252525;
-  --ide-input-border:     #3c3c3c;
-  --ide-input-border-focus: rgba(0,127,212,0.5);
-  --ide-chat-user-bg:     #0e639c;
-  --ide-chat-user-text:   #e0e0e0;
-  --ide-chat-ai-bg:       #252525;
-  --ide-chat-ai-text:     #cccccc;
+  /* Backgrounds */
+  --ide-bg:               #0a0a0a;
+  --ide-sidebar-bg:       #111111;
+  --ide-tab-active-bg:    #161616;
+  --ide-tab-inactive-bg:  #0a0a0a;
+  --ide-titlebar-bg:      #111111;
+  --ide-activity-bg:      #111111;
+
+  /* Borders — very subtle, like Playground */
+  --ide-border:           #222222;
+  --ide-border-subtle:    rgba(255,255,255,0.08);
+
+  /* Accent */
+  --ide-accent:           #007aff;
+  --ide-accent-hover:     #3395ff;
+  --ide-accent-dim:       rgba(0,122,255,0.15);
+
+  /* Text */
+  --ide-text:             #c9c9c9;
+  --ide-text-bright:      #f0f0f0;
+  --ide-text-muted:       #666666;
+  --ide-text-dim:         #3d3d3d;
+
+  /* Hover / Selection */
+  --ide-hover:            #1c1c1c;
+  --ide-hover-strong:     #242424;
+  --ide-selected:         rgba(91,124,246,0.18);
+  --ide-selected-text:    #f0f0f0;
+
+  /* Status bar */
+  --ide-statusbar-bg:     #0f0f0f;
+  --ide-statusbar-text:   #666666;
+
+  /* File tree */
+  --ide-folder-color:     #e2a060;
+  --ide-react-color:      #61dafb;
+
+  /* Input */
+  --ide-input-bg:         #111111;
+  --ide-input-border:     #2a2a2a;
+  --ide-input-border-focus: rgba(91,124,246,0.4);
+
+  /* Chat */
+  --ide-chat-user-bg:     #5b7cf6;
+  --ide-chat-user-text:   #ffffff;
+  --ide-chat-ai-bg:       #1a1a1a;
+  --ide-chat-ai-text:     #c9c9c9;
+
+  /* Code blocks */
   --ide-code-bg:          #0d1117;
-  --ide-code-border:      #30363d;
+  --ide-code-border:      #21262d;
   --ide-code-text:        #e6edf3;
-  --ide-suggestion-bg:    #252525;
-  --ide-suggestion-border:#333333;
-  --ide-suggestion-hover: #2d2d2d;
-  --ide-titlebar-bg:      #181818;
-  --ide-activity-bg:      #181818;
-  --ide-chip-bg:          rgba(0,127,212,0.15);
-  --ide-chip-border:      rgba(0,127,212,0.3);
-  --ide-chip-text:        #4fc1ff;
-  --ide-scrollbar:        rgba(121,121,121,0.35);
-  --ide-scrollbar-hover:  rgba(121,121,121,0.65);
+
+  /* Suggestions */
+  --ide-suggestion-bg:    #161616;
+  --ide-suggestion-border:#222222;
+  --ide-suggestion-hover: #1e1e1e;
+
+  /* Chips */
+  --ide-chip-bg:          rgba(91,124,246,0.12);
+  --ide-chip-border:      rgba(91,124,246,0.25);
+  --ide-chip-text:        #8ba5ff;
+
+  /* Scrollbar */
+  --ide-scrollbar:        rgba(255,255,255,0.07);
+  --ide-scrollbar-hover:  rgba(255,255,255,0.14);
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LIGHT THEME
+   LIGHT THEME — Clean, white, Playground look
 ═══════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-  --ide-bg:               #ffffff;
-  --ide-sidebar-bg:       #f3f3f3;
+  /* Backgrounds */
+  --ide-bg:               #f8f8f8;
+  --ide-sidebar-bg:       #ffffff;
   --ide-tab-active-bg:    #ffffff;
-  --ide-tab-inactive-bg:  #ececec;
-  --ide-border:           #e0e0e0;
-  --ide-accent:           #005fb8;
-  --ide-accent-hover:     #0066cc;
-  --ide-text:             #383838;
-  --ide-text-bright:      #1a1a1a;
-  --ide-text-muted:       #717171;
-  --ide-text-dim:         #aaaaaa;
-  --ide-hover:            #e8e8e8;
-  --ide-hover-strong:     #dcdcdc;
-  --ide-selected:         #cce5ff;
-  --ide-selected-text:    #1a1a1a;
-  --ide-statusbar-bg:     #005fb8;
-  --ide-folder-color:     #c09040;
-  --ide-react-color:      #0070c1;
-  --ide-input-bg:         #f0f0f0;
-  --ide-input-border:     #d0d0d0;
-  --ide-input-border-focus: rgba(0,95,184,0.4);
-  --ide-chat-user-bg:     #005fb8;
+  --ide-tab-inactive-bg:  #f5f5f5;
+  --ide-titlebar-bg:      #ffffff;
+  --ide-activity-bg:      #ffffff;
+
+  /* Borders */
+  --ide-border:           #e8e8e8;
+  --ide-border-subtle:    #f0f0f0;
+
+  /* Accent */
+  --ide-accent:           #5b7cf6;
+  --ide-accent-hover:     #4a6bf4;
+  --ide-accent-dim:       rgba(91,124,246,0.1);
+
+  /* Text */
+  --ide-text:             #444444;
+  --ide-text-bright:      #111111;
+  --ide-text-muted:       #888888;
+  --ide-text-dim:         #bbbbbb;
+
+  /* Hover / Selection */
+  --ide-hover:            #f2f2f2;
+  --ide-hover-strong:     #ebebeb;
+  --ide-selected:         rgba(91,124,246,0.1);
+  --ide-selected-text:    #111111;
+
+  /* Status bar */
+  --ide-statusbar-bg:     #f0f0f0;
+  --ide-statusbar-text:   #888888;
+
+  /* File tree */
+  --ide-folder-color:     #c07830;
+  --ide-react-color:      #007acc;
+
+  /* Input */
+  --ide-input-bg:         #fafafa;
+  --ide-input-border:     #e0e0e0;
+  --ide-input-border-focus: rgba(91,124,246,0.3);
+
+  /* Chat */
+  --ide-chat-user-bg:     #5b7cf6;
   --ide-chat-user-text:   #ffffff;
-  --ide-chat-ai-bg:       #f0f0f0;
-  --ide-chat-ai-text:     #333333;
+  --ide-chat-ai-bg:       #f5f5f5;
+  --ide-chat-ai-text:     #444444;
+
+  /* Code blocks */
   --ide-code-bg:          #f6f8fa;
-  --ide-code-border:      #d1d5da;
+  --ide-code-border:      #d8dee4;
   --ide-code-text:        #24292e;
-  --ide-suggestion-bg:    #f5f5f5;
-  --ide-suggestion-border:#e0e0e0;
-  --ide-suggestion-hover: #ebebeb;
-  --ide-titlebar-bg:      #dddddd;
-  --ide-activity-bg:      #2c2c2c;
-  --ide-chip-bg:          rgba(0,95,184,0.1);
-  --ide-chip-border:      rgba(0,95,184,0.25);
-  --ide-chip-text:        #005fb8;
-  --ide-scrollbar:        rgba(100,100,100,0.25);
-  --ide-scrollbar-hover:  rgba(100,100,100,0.5);
+
+  /* Suggestions */
+  --ide-suggestion-bg:    #fafafa;
+  --ide-suggestion-border:#e8e8e8;
+  --ide-suggestion-hover: #f2f2f2;
+
+  /* Chips */
+  --ide-chip-bg:          rgba(91,124,246,0.08);
+  --ide-chip-border:      rgba(91,124,246,0.2);
+  --ide-chip-text:        #4a6bf4;
+
+  /* Scrollbar */
+  --ide-scrollbar:        rgba(0,0,0,0.1);
+  --ide-scrollbar-hover:  rgba(0,0,0,0.2);
 }
 
+/* ─── Base Reset ─────────────────────────────────────────── */
 * { box-sizing: border-box; }
 
 body {
@@ -102,11 +159,11 @@ body {
 }
 
 /* ─── IDE Scrollbar ─────────────────────────────────────── */
-.ide-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.ide-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
 .ide-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .ide-scrollbar::-webkit-scrollbar-thumb {
   background-color: var(--ide-scrollbar);
-  border-radius: 3px;
+  border-radius: 4px;
   transition: background-color 0.2s;
 }
 .ide-scrollbar::-webkit-scrollbar-thumb:hover { background-color: var(--ide-scrollbar-hover); }
@@ -117,18 +174,18 @@ body {
 
 /* ─── Animations ─────────────────────────────────────────── */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0);   }
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeIn {
   from { opacity: 0; } to { opacity: 1; }
 }
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(8px); }
-  to   { opacity: 1; transform: translateX(0);   }
+  from { opacity: 0; transform: translateX(6px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 @keyframes typing-dot {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
   40% { transform: scale(1); opacity: 1; }
 }
 @keyframes shimmer {
@@ -136,18 +193,23 @@ body {
   100% { background-position:  200% center; }
 }
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(0,127,212,0.4); }
-  50%       { box-shadow: 0 0 18px rgba(0,127,212,0.7); }
+  0%, 100% { box-shadow: 0 0 8px rgba(91,124,246,0.3); }
+  50%       { box-shadow: 0 0 20px rgba(91,124,246,0.6); }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
-.animate-fade-in-up   { animation: fadeInUp 0.18s ease-out both; }
-.animate-fade-in      { animation: fadeIn 0.15s ease-out both; }
-.animate-slide-in-right { animation: slideInRight 0.2s ease-out both; }
+.animate-fade-in-up    { animation: fadeInUp 0.16s ease-out both; }
+.animate-fade-in       { animation: fadeIn 0.14s ease-out both; }
+.animate-slide-in-right { animation: slideInRight 0.18s ease-out both; }
+.animate-spin          { animation: spin 1s linear infinite; }
 
 /* ─── Typing dots ────────────────────────────────────────── */
 .typing-dot {
   display: inline-block;
-  width: 5px; height: 5px;
+  width: 4px; height: 4px;
   border-radius: 50%;
   background: currentColor;
   animation: typing-dot 1.2s infinite ease-in-out;
@@ -156,36 +218,67 @@ body {
 .typing-dot:nth-child(3) { animation-delay: 0.3s; }
 
 /* ─── Resize handles ─────────────────────────────────────── */
+.resize-handle-v {
+  cursor: col-resize;
+  width: 1px;
+  background: var(--ide-border);
+  transition: background 0.15s, width 0.15s;
+  flex-shrink: 0;
+  position: relative;
+}
+.resize-handle-v::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  left: -3px; right: -3px;
+  cursor: col-resize;
+}
+.resize-handle-v:hover { background: var(--ide-accent); width: 2px; }
+
 .resize-handle-h {
   cursor: row-resize;
-  height: 4px;
-  background: transparent;
+  height: 1px;
+  background: var(--ide-border);
   transition: background 0.15s;
   flex-shrink: 0;
+  position: relative;
 }
-.resize-handle-h:hover,
-.resize-handle-h:active { background: var(--ide-accent); }
+.resize-handle-h::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: -3px; bottom: -3px;
+  cursor: row-resize;
+}
+.resize-handle-h:hover { background: var(--ide-accent); }
 
-/* ─── Activity bar left border indicator ────────────────── */
-.activity-item-active::before {
+/* ─── Activity bar ───────────────────────────────────────── */
+.activity-item {
+  position: relative;
+}
+.activity-item.active::before {
   content: '';
   position: absolute;
   left: 0; top: 50%;
   transform: translateY(-50%);
-  width: 2px; height: 24px;
+  width: 2px; height: 20px;
   background: var(--ide-text-bright);
   border-radius: 0 2px 2px 0;
 }
+
+/* ─── Tab bar items ──────────────────────────────────────── */
+.tab-close-btn { opacity: 0; transition: opacity 0.1s; }
+.tab-item:hover .tab-close-btn { opacity: 1; }
 
 /* ─── Chat code block ────────────────────────────────────── */
 .chat-code-block {
   background: var(--ide-code-bg);
   border: 1px solid var(--ide-code-border);
-  border-radius: 8px;
+  border-radius: 10px;
   font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
   font-size: 11.5px;
-  line-height: 1.65;
-  padding: 10px 14px;
+  line-height: 1.7;
+  padding: 12px 16px;
   overflow-x: auto;
   color: var(--ide-code-text);
   margin: 4px 0;
@@ -196,19 +289,14 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 2px 7px;
+  padding: 2px 8px;
   background: var(--ide-chip-bg);
   border: 1px solid var(--ide-chip-border);
-  border-radius: 5px;
+  border-radius: 6px;
   font-size: 11px;
   color: var(--ide-chip-text);
   font-family: 'JetBrains Mono', monospace;
 }
-
-/* ─── Tab close button ───────────────────────────────────── */
-.tab-close-btn { opacity: 0; transition: opacity 0.1s; }
-.tab-item:hover .tab-close-btn,
-.tab-item.active .tab-close-btn { opacity: 1; }
 
 /* ─── Tooltip ─────────────────────────────────────────────── */
 .ide-tooltip { position: relative; }
@@ -223,7 +311,7 @@ body {
   color: var(--ide-text);
   font-size: 11px;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: 5px;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
@@ -232,40 +320,43 @@ body {
 }
 .ide-tooltip:hover::after { opacity: 1; }
 
-/* ─── AI Shimmer (loading) ───────────────────────────────── */
+/* ─── AI Shimmer ─────────────────────────────────────────── */
 .ai-shimmer {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255,255,255,0.05) 50%,
+    rgba(255,255,255,0.04) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
 
-/* ─── Glow on focused input ──────────────────────────────── */
-.chat-input-focused {
-  animation: glowPulse 2s ease-in-out infinite;
-}
-
-/* ─── xterm (Cursor-style terminal panel) ────────────────── */
-.xterm {
-  height: 100%;
-  padding: 4px 0;
-}
+/* ─── xterm terminal ─────────────────────────────────────── */
+.xterm { height: 100%; padding: 4px 0; }
 .xterm-viewport {
   overflow-y: auto !important;
   scrollbar-width: thin;
   scrollbar-color: var(--ide-scrollbar) transparent;
 }
-.xterm-viewport::-webkit-scrollbar {
-  width: 6px;
-}
+.xterm-viewport::-webkit-scrollbar { width: 5px; }
 .xterm-viewport::-webkit-scrollbar-thumb {
   background-color: var(--ide-scrollbar);
   border-radius: 3px;
 }
-.xterm-screen {
-  height: 100%;
+.xterm-screen { height: 100%; }
+
+/* ─── Run button glow ────────────────────────────────────── */
+.run-btn-glow {
+  animation: glowPulse 2.5s ease-in-out infinite;
+}
+
+/* ─── Panel section headers ──────────────────────────────── */
+.panel-header {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ide-text-muted);
+  user-select: none;
 }

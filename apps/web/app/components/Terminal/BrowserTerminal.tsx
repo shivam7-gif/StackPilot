@@ -3,7 +3,7 @@
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { io, type Socket } from "socket.io-client";
 import { useParams } from "next/navigation";
 
@@ -45,6 +45,138 @@ interface BrowserTerminalProps {
   onResizeStart: (e: React.MouseEvent) => void;
 }
 
+interface TerminalData {
+  id: string;
+  name: string;
+}
+
+// Sub-component that holds exactly ONE xterm.js instance and ONE socket connection
+const TerminalInstance = memo(
+  ({
+    terminalId,
+    projectId,
+    isActive,
+    onConnectedChange,
+  }: {
+    terminalId: string;
+    projectId: string;
+    isActive: boolean;
+    onConnectedChange: (connected: boolean) => void;
+  }) => {
+    const terminalRef = useRef<HTMLDivElement>(null);
+    const xtermRef = useRef<Terminal | null>(null);
+    const fitAddonRef = useRef<FitAddon | null>(null);
+    const socketRef = useRef<Socket | null>(null);
+
+    const fitTerminal = useCallback(() => {
+      if (!isActive) return;
+      const fitAddon = fitAddonRef.current;
+      const term = xtermRef.current;
+      const socket = socketRef.current;
+      if (!fitAddon || !term) return;
+
+      try {
+        fitAddon.fit();
+        if (socket?.connected) {
+          socket.emit("shell-resize", { cols: term.cols, rows: term.rows });
+        }
+      } catch (e) {
+        // ignore resize errors when terminal is hidden
+      }
+    }, [isActive]);
+
+    useEffect(() => {
+      if (!terminalRef.current) return;
+
+      const term = new Terminal({
+        cursorBlink: true,
+        fontSize: 12,
+        lineHeight: 1.2,
+        theme: CURSOR_TERMINAL_THEME,
+        fontFamily: '"JetBrains Mono", "Cascadia Code", Consolas, monospace',
+        convertEol: true,
+        scrollback: 5000,
+      });
+
+      const fitAddon = new FitAddon();
+      term.loadAddon(fitAddon);
+      term.open(terminalRef.current);
+
+      xtermRef.current = term;
+      fitAddonRef.current = fitAddon;
+
+      // The backend treats each socket connection to this namespace as a new shell session!
+      const socket = io("http://localhost:5000/terminal", {
+        query: { projectId, terminalId },
+      });
+      socketRef.current = socket;
+
+      socket.on("connect", () => {
+        onConnectedChange(true);
+        if (isActive) fitTerminal();
+      });
+
+      socket.on("disconnect", () => {
+        onConnectedChange(false);
+      });
+
+      socket.on("shell-output", (data: string) => {
+        term.write(data);
+      });
+
+      term.onData((data) => {
+        if (socket.connected) {
+          socket.emit("shell-input", data);
+        }
+      });
+
+      const resizeObserver = new ResizeObserver(() => fitTerminal());
+      resizeObserver.observe(terminalRef.current);
+      window.addEventListener("resize", fitTerminal);
+
+      if (isActive) {
+        requestAnimationFrame(() => fitTerminal());
+        term.focus();
+      }
+
+      return () => {
+        resizeObserver.disconnect();
+        window.removeEventListener("resize", fitTerminal);
+        socket.disconnect();
+        socketRef.current = null;
+        term.dispose();
+        xtermRef.current = null;
+        fitAddonRef.current = null;
+        onConnectedChange(false);
+      };
+    }, [projectId, terminalId]);
+
+    // Refit when this terminal becomes active
+    useEffect(() => {
+      if (isActive) {
+        requestAnimationFrame(() => {
+          fitTerminal();
+          xtermRef.current?.focus();
+        });
+      }
+    }, [isActive, fitTerminal]);
+
+    return (
+      <div
+        ref={terminalRef}
+        className="absolute inset-0 px-2 py-1"
+        style={{
+          background: "var(--ide-bg)",
+          visibility: isActive ? "visible" : "hidden",
+          zIndex: isActive ? 10 : 0,
+        }}
+        onClick={() => xtermRef.current?.focus()}
+      />
+    );
+  }
+);
+TerminalInstance.displayName = "TerminalInstance";
+
 export default function BrowserTerminal({
   height,
   onResizeStart,
@@ -52,93 +184,37 @@ export default function BrowserTerminal({
   const [activeTab, setActiveTab] = useState<TerminalTab>("terminal");
   const [collapsed, setCollapsed] = useState(false);
   const [connected, setConnected] = useState(false);
-  const terminalRef = useRef<HTMLDivElement>(null);
-  const xtermRef = useRef<Terminal | null>(null);
-  const fitAddonRef = useRef<FitAddon | null>(null);
-  const socketRef = useRef<Socket | null>(null);
   const { id: projectIdFromUrl } = useParams();
 
-  const fitTerminal = useCallback(() => {
-    const fitAddon = fitAddonRef.current;
-    const term = xtermRef.current;
-    const socket = socketRef.current;
-    if (!fitAddon || !term) return;
+  // Multi-terminal state
+  const [terminals, setTerminals] = useState<TerminalData[]>([
+    { id: "term-1", name: "bash" },
+  ]);
+  const [activeTerminalId, setActiveTerminalId] = useState("term-1");
 
-    fitAddon.fit();
-    if (socket?.connected) {
-      socket.emit("shell-resize", { cols: term.cols, rows: term.rows });
-    }
-  }, []);
+  const handleNewTerminal = () => {
+    const newId = `term-${Date.now()}`;
+    setTerminals((prev) => [...prev, { id: newId, name: "bash" }]);
+    setActiveTerminalId(newId);
+    setActiveTab("terminal");
+  };
 
-  useEffect(() => {
-    if (!terminalRef.current || !projectIdFromUrl) {
-      return;
-    }
-
-    const term = new Terminal({
-      cursorBlink: true,
-      fontSize: 12,
-      lineHeight: 1.2,
-      theme: CURSOR_TERMINAL_THEME,
-      fontFamily: '"JetBrains Mono", "Cascadia Code", Consolas, monospace',
-      convertEol: true,
-      scrollback: 5000,
-    });
-
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.open(terminalRef.current);
-    fitAddon.fit();
-
-    xtermRef.current = term;
-    fitAddonRef.current = fitAddon;
-
-    const socket = io("http://localhost:5000/terminal", {
-      query: { projectId: projectIdFromUrl as string },
-    });
-    socketRef.current = socket;
-    socket.on("connect", () => {
-      setConnected(true);
-      fitTerminal();
-    });
-
-    socket.on("disconnect", () => {
-      setConnected(false);
-    });
-
-    socket.on("shell-output", (data: string) => {
-      term.write(data);
-    });
-
-    term.onData((data) => {
-      if (socket.connected) {
-        socket.emit("shell-input", data);
+  const handleDeleteTerminal = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTerminals((prev) => {
+      const filtered = prev.filter((t) => t.id !== id);
+      if (filtered.length === 0) {
+        // Always keep at least one terminal
+        const newId = `term-${Date.now()}`;
+        setActiveTerminalId(newId);
+        return [{ id: newId, name: "bash" }];
       }
+      if (activeTerminalId === id) {
+        setActiveTerminalId(filtered[filtered.length - 1].id);
+      }
+      return filtered;
     });
-
-    const resizeObserver = new ResizeObserver(() => fitTerminal());
-    resizeObserver.observe(terminalRef.current);
-    window.addEventListener("resize", fitTerminal);
-
-    requestAnimationFrame(() => fitTerminal());
-    term.focus();
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", fitTerminal);
-      socket.disconnect();
-      socketRef.current = null;
-      term.dispose();
-      xtermRef.current = null;
-      fitAddonRef.current = null;
-    };
-  }, [projectIdFromUrl, fitTerminal]);
-
-  useEffect(() => {
-    if (activeTab === "terminal" && !collapsed) {
-      requestAnimationFrame(() => fitTerminal());
-    }
-  }, [height, collapsed, activeTab, fitTerminal]);
+  };
 
   if (collapsed) {
     return (
@@ -151,14 +227,25 @@ export default function BrowserTerminal({
         }}
         onClick={() => setCollapsed(false)}
       >
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="var(--ide-text-muted)">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 16 16"
+          fill="var(--ide-text-muted)"
+        >
           <path d="M4 10l4-4 4 4H4z" />
         </svg>
-        <span className="text-[11px]" style={{ color: "var(--ide-text-muted)" }}>
+        <span
+          className="text-[11px]"
+          style={{ color: "var(--ide-text-muted)" }}
+        >
           Terminal
         </span>
         {!connected && (
-          <span className="text-[10px]" style={{ color: "var(--ide-text-dim)" }}>
+          <span
+            className="text-[10px]"
+            style={{ color: "var(--ide-text-dim)" }}
+          >
             (disconnected)
           </span>
         )}
@@ -206,7 +293,10 @@ export default function BrowserTerminal({
               {id === "problems" && (
                 <span
                   className="ml-1.5 px-1 rounded-full text-[9px]"
-                  style={{ background: "var(--ide-hover-strong)", color: "var(--ide-text-dim)" }}
+                  style={{
+                    background: "var(--ide-hover-strong)",
+                    color: "var(--ide-text-dim)",
+                  }}
                 >
                   0
                 </span>
@@ -215,50 +305,147 @@ export default function BrowserTerminal({
           ))}
         </div>
 
-        <div className="flex items-center gap-0.5 pr-2">
-          <span
-            className="text-[10px] px-2 mr-1 hidden sm:inline"
-            style={{ color: connected ? "#23d18b" : "var(--ide-text-dim)" }}
-          >
-            {connected ? "● connected" : "○ disconnected"}
-          </span>
-          <PanelButton title="New terminal" onClick={() => xtermRef.current?.clear()}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </PanelButton>
-          <PanelButton title="Split terminal">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <line x1="12" y1="3" x2="12" y2="21" />
-            </svg>
-          </PanelButton>
-          <div className="w-px h-4 mx-1" style={{ background: "var(--ide-border)" }} />
-          <PanelButton title="Minimize panel" onClick={() => setCollapsed(true)}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 15l-7 7-7-7" />
-            </svg>
-          </PanelButton>
-          <PanelButton title="Maximize panel">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3" />
-            </svg>
-          </PanelButton>
+        <div className="flex items-center h-full">
+          {/* Terminal Tabs List (Only show when Terminal is active) */}
+          {activeTab === "terminal" && (
+            <div className="flex items-center h-full mr-2 gap-1 border-r border-[#ffffff10] pr-2">
+              {terminals.map((term, index) => (
+                <div
+                  key={term.id}
+                  onClick={() => setActiveTerminalId(term.id)}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer transition-colors group"
+                  style={{
+                    background:
+                      activeTerminalId === term.id
+                        ? "var(--ide-hover)"
+                        : "transparent",
+                    color:
+                      activeTerminalId === term.id
+                        ? "var(--ide-text)"
+                        : "var(--ide-text-muted)",
+                  }}
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <polyline points="4 17 10 11 4 5" />
+                    <line x1="12" y1="19" x2="20" y2="19" />
+                  </svg>
+                  <span className="text-[11px]">
+                    {term.name} {index > 0 ? index + 1 : ""}
+                  </span>
+                  <button
+                    onClick={(e) => handleDeleteTerminal(term.id, e)}
+                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[#ffffff20] transition-all"
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-0.5 pr-2">
+            <span
+              className="text-[10px] px-2 mr-1 hidden sm:inline"
+              style={{ color: connected ? "#23d18b" : "var(--ide-text-dim)" }}
+            >
+              {connected ? "● connected" : "○ disconnected"}
+            </span>
+            <PanelButton title="New terminal" onClick={handleNewTerminal}>
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </PanelButton>
+            <PanelButton title="Split terminal">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <line x1="12" y1="3" x2="12" y2="21" />
+              </svg>
+            </PanelButton>
+            <div
+              className="w-px h-4 mx-1"
+              style={{ background: "var(--ide-border)" }}
+            />
+            <PanelButton
+              title="Minimize panel"
+              onClick={() => setCollapsed(true)}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M19 15l-7 7-7-7" />
+              </svg>
+            </PanelButton>
+            <PanelButton title="Maximize panel">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3" />
+              </svg>
+            </PanelButton>
+          </div>
         </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden relative">
-        <div
-          ref={terminalRef}
-          className="absolute inset-0 px-2 py-1"
-          style={{
-            background: "#1e1e1e",
-            visibility: activeTab === "terminal" ? "visible" : "hidden",
-          }}
-          onClick={() => xtermRef.current?.focus()}
-        />
+        {activeTab === "terminal" &&
+          terminals.map((term) => (
+            <TerminalInstance
+              key={term.id}
+              terminalId={term.id}
+              projectId={projectIdFromUrl as string}
+              isActive={activeTerminalId === term.id}
+              onConnectedChange={(c) => {
+                // If the active terminal is connected, set overall connected to true
+                if (activeTerminalId === term.id) {
+                  setConnected(c);
+                }
+              }}
+            />
+          ))}
 
-        {activeTab === "problems" && <EmptyPanel message="No problems detected." />}
+        {activeTab === "problems" && (
+          <EmptyPanel message="No problems detected." />
+        )}
         {activeTab === "output" && <EmptyPanel message="No output yet." />}
         {activeTab === "ports" && <PortsPanel />}
       </div>
@@ -298,7 +485,14 @@ function PanelButton({
 function EmptyPanel({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-2 py-4">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--ide-text-dim)" strokeWidth="1">
+      <svg
+        width="32"
+        height="32"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--ide-text-dim)"
+        strokeWidth="1"
+      >
         <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
         <polyline points="22 4 12 14.01 9 11.01" />
       </svg>

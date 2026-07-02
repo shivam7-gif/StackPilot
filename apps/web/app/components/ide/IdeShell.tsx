@@ -29,6 +29,7 @@ export default function IdeShell({ projectName }: IdeShellProps) {
   // Preview store
   const activeView = ActivePreviewStore((state) => state.activeView);
   const previewUrl = ActivePreviewStore((state) => state.previewUrl);
+  const openEditor = ActivePreviewStore((state) => state.openEditor);
 
   // Horizontal panel resize
   const explorer = usePanelResize({
@@ -86,14 +87,40 @@ export default function IdeShell({ projectName }: IdeShellProps) {
 
           <ResizeHandle onMouseDown={explorer.startDrag} />
 
-          {activeView === "editor" ? (
-            <EditorArea />
-          ) : (
-            <iframe
-              src={previewUrl ?? ""}
-              title="Preview"
-              className="flex-1 w-full h-full border-0 bg-white"
-            />
+          <EditorArea />
+
+          {activeView === "preview" && (
+            <>
+              <ResizeHandle onMouseDown={() => {}} />
+              <div className="flex-1 min-w-[300px] h-full flex flex-col relative border-l" style={{ borderColor: "var(--ide-border)" }}>
+                <div className="flex items-center justify-between px-3 h-[36px] shrink-0" style={{ background: "var(--ide-titlebar-bg)", borderBottom: "1px solid var(--ide-border)" }}>
+                  <span className="text-[12px] font-medium" style={{ color: "var(--ide-text-bright)" }}>Preview</span>
+                  <button 
+                    onClick={openEditor} 
+                    className="w-5 h-5 flex items-center justify-center rounded transition-colors"
+                    style={{ color: "var(--ide-text-dim)" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "var(--ide-hover)";
+                      e.currentTarget.style.color = "var(--ide-text)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = "var(--ide-text-dim)";
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+                <iframe
+                  src={previewUrl ?? ""}
+                  title="Preview"
+                  className="flex-1 w-full border-0 bg-white"
+                />
+              </div>
+            </>
           )}
 
           <ResizeHandle onMouseDown={aiPanel.startDrag} />

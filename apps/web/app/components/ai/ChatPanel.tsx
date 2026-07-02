@@ -17,7 +17,7 @@ type Message = {
 type AiTab = "karma" | "linecoder";
 
 const TABS: { id: AiTab; label: string }[] = [
-  { id: "karma", label: "Karma" },
+  { id: "karma", label: "AI Chat" },
   { id: "linecoder", label: "Line Coder" },
 ];
 
@@ -26,28 +26,32 @@ const SUGGESTIONS = [
   "Fix the bug",
   "Add error handling",
   "Write unit tests",
-  "Refactor to be cleaner",
+  "Refactor this",
 ];
 
 function CodeBlock({ lang, code }: { lang: string; code: string }) {
   const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
   return (
     <div className="chat-code-block relative group/code">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] text-[#666] uppercase tracking-wider">{lang || "code"}</span>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--ide-text-dim)" }}>
+          {lang || "code"}
+        </span>
         <button
-          onClick={handleCopy}
-          className="text-[10px] text-[#666] hover:text-[#ccc] transition-colors opacity-0 group-hover/code:opacity-100"
+          onClick={() => {
+            navigator.clipboard.writeText(code);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
+          className="text-[10px] font-medium transition-colors"
+          style={{ color: "var(--ide-text-dim)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ide-text-muted)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ide-text-dim)"; }}
         >
-          {copied ? "Copied!" : "Copy"}
+          {copied ? "✓ Copied" : "Copy"}
         </button>
       </div>
-      <pre className="overflow-x-auto text-[11px] leading-relaxed whitespace-pre">
+      <pre className="overflow-x-auto text-[11.5px] leading-relaxed whitespace-pre">
         <code>{code}</code>
       </pre>
     </div>
@@ -57,33 +61,27 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
 function MessageBubble({ msg }: { msg: Message }) {
   const isUser = msg.role === "user";
   return (
-    <div
-      className={`flex gap-2.5 animate-fade-in-up ${isUser ? "flex-row-reverse" : ""}`}
-    >
+    <div className={`flex gap-2.5 animate-fade-in-up ${isUser ? "flex-row-reverse" : ""}`}>
       {/* Avatar */}
       <div
         className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5"
         style={{
-          background: isUser
-            ? "#2d2d2d"
-            : "linear-gradient(135deg, #007fd4 0%, #6366f1 100%)",
-          color: isUser ? "#888" : "white",
-          border: isUser ? "1px solid #3c3c3c" : "none",
+          background: isUser ? "var(--ide-hover-strong)" : "var(--ide-accent)",
+          color: isUser ? "var(--ide-text-muted)" : "#fff",
         }}
       >
-        {isUser ? "U" : "K"}
+        {isUser ? "U" : "AI"}
       </div>
 
       {/* Content */}
-      <div
-        className={`flex flex-col gap-1.5 max-w-[85%] ${isUser ? "items-end" : "items-start"}`}
-      >
+      <div className={`flex flex-col gap-1.5 max-w-[86%] ${isUser ? "items-end" : "items-start"}`}>
         {msg.text && (
           <div
-            className="text-[12px] leading-relaxed rounded-xl px-3 py-2"
+            className="text-[12px] leading-relaxed px-3 py-2"
             style={{
-              background: isUser ? "#0e639c" : "#252525",
-              color: isUser ? "#e0e0e0" : "#cccccc",
+              background: isUser ? "var(--ide-chat-user-bg)" : "var(--ide-chat-ai-bg)",
+              color: isUser ? "var(--ide-chat-user-text)" : "var(--ide-chat-ai-text)",
+              border: isUser ? "none" : "1px solid var(--ide-border)",
               borderRadius: isUser ? "12px 12px 3px 12px" : "12px 12px 12px 3px",
             }}
           >
@@ -93,7 +91,7 @@ function MessageBubble({ msg }: { msg: Message }) {
         {msg.codeBlocks?.map((cb, i) => (
           <CodeBlock key={i} lang={cb.lang} code={cb.code} />
         ))}
-        <span className="text-[9px] text-[#444]">
+        <span className="text-[10px] px-0.5" style={{ color: "var(--ide-text-dim)" }}>
           {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </span>
       </div>
@@ -106,19 +104,17 @@ function TypingIndicator() {
     <div className="flex gap-2.5 animate-fade-in">
       <div
         className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-        style={{
-          background: "linear-gradient(135deg, #007fd4 0%, #6366f1 100%)",
-        }}
+        style={{ background: "var(--ide-accent)" }}
       >
-        <span className="text-[10px] font-bold text-white">K</span>
+        <span className="text-[10px] font-bold text-white">AI</span>
       </div>
       <div
-        className="flex items-center gap-1 px-3 py-2 rounded-xl"
-        style={{ background: "#252525" }}
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl"
+        style={{ background: "var(--ide-chat-ai-bg)", border: "1px solid var(--ide-border)" }}
       >
-        <span className="typing-dot" />
-        <span className="typing-dot" />
-        <span className="typing-dot" />
+        <span className="typing-dot" style={{ color: "var(--ide-text-muted)" }} />
+        <span className="typing-dot" style={{ color: "var(--ide-text-muted)" }} />
+        <span className="typing-dot" style={{ color: "var(--ide-text-muted)" }} />
       </div>
     </div>
   );
@@ -158,22 +154,20 @@ export default function ChatPanel({ width }: ChatPanelProps) {
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
-    // Simulate AI typing
     setIsTyping(true);
     setTimeout(() => {
       setIsTyping(false);
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
-        text: "I'm Karma, your AI coding assistant. I'll help you build, refactor, and debug your code.",
+        text: "I'm your AI coding assistant. I'll help you build, refactor, and debug your code with precision.",
         role: "ai",
         timestamp: new Date(),
         codeBlocks:
-          trimmed.toLowerCase().includes("code") ||
-            trimmed.toLowerCase().includes("example")
+          trimmed.toLowerCase().includes("code") || trimmed.toLowerCase().includes("example")
             ? [
               {
                 lang: "typescript",
-                code: `// Example code\nconst greet = (name: string) => {\n  return \`Hello, \${name}!\`;\n};\n\nconsole.log(greet("World"));`,
+                code: `// Example generated by AI\nconst greet = (name: string) => {\n  return \`Hello, \${name}!\`;\n};\n\nconsole.log(greet("World"));`,
               },
             ]
             : undefined,
@@ -187,51 +181,54 @@ export default function ChatPanel({ width }: ChatPanelProps) {
       className="h-full shrink-0 overflow-hidden flex flex-col"
       style={{
         width,
-        background: "#181818",
-        borderLeft: "1px solid #2b2b2b",
+        background: "var(--ide-sidebar-bg)",
+        borderLeft: "1px solid var(--ide-border)",
       }}
     >
       {/* ── Tab bar ── */}
       <div
         className="flex items-center shrink-0 px-1"
-        style={{ height: 35, borderBottom: "1px solid #2b2b2b" }}
+        style={{ height: 36, borderBottom: "1px solid var(--ide-border)" }}
       >
         {TABS.map(({ id, label }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className="px-3 h-full text-[11px] transition-colors relative"
+            className="px-3 h-full text-[11.5px] font-medium transition-all relative"
             style={{
-              color: activeTab === id ? "#e0e0e0" : "#858585",
-              borderBottom: activeTab === id ? "2px solid #007fd4" : "2px solid transparent",
+              color: activeTab === id ? "var(--ide-text-bright)" : "var(--ide-text-muted)",
             }}
           >
             {label}
+            {/* Active indicator */}
+            {activeTab === id && (
+              <span
+                className="absolute bottom-0 left-2 right-2 h-[2px] rounded-t-sm"
+                style={{ background: "var(--ide-accent)" }}
+              />
+            )}
           </button>
         ))}
 
-        {/* Spacer */}
         <div className="flex-1" />
 
         {/* New chat */}
         <button
           title="New conversation"
-          className="w-7 h-7 flex items-center justify-center rounded text-[#858585] hover:text-[#ccc] hover:bg-[#252525] transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
+          style={{ color: "var(--ide-text-dim)" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "var(--ide-hover)";
+            e.currentTarget.style.color = "var(--ide-text-muted)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "var(--ide-text-dim)";
+          }}
+          onClick={() => setMessages([])}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14" />
-          </svg>
-        </button>
-
-        {/* History */}
-        <button
-          title="Conversation history"
-          className="w-7 h-7 flex items-center justify-center rounded text-[#858585] hover:text-[#ccc] hover:bg-[#252525] transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 8v4l3 3" strokeLinecap="round" />
-            <path d="M3.05 11a9 9 0 1 0 .5-4.5" strokeLinecap="round" />
-            <polyline points="3 3 3 7 7 7" />
           </svg>
         </button>
       </div>
@@ -239,28 +236,21 @@ export default function ChatPanel({ width }: ChatPanelProps) {
       {/* ── Header ── */}
       <div
         className="px-3 py-2.5 shrink-0"
-        style={{ borderBottom: "1px solid #2b2b2b" }}
+        style={{ borderBottom: "1px solid var(--ide-border)" }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
+
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[13px] font-semibold text-[#e0e0e0]">Karma</span>
-                {/* <span
-                  className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
-                  style={{ background: "rgba(99, 102, 241, 0.2)", color: "#818cf8" }}
-                >
-                  v0.1
-                </span> */}
-                <p className="text-[10px] text-[#555]">Full-stack AI agent</p>
-              </div>
+              <span className="text-[13px] font-semibold block" style={{ color: "var(--ide-text-bright)" }}>
+                Karma Assistant
+              </span>
+              <span className="text-[10px]" style={{ color: "var(--ide-text-dim)" }}>
+                AI Coding Agent
+              </span>
             </div>
           </div>
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ background: "#22c55e", boxShadow: "0 0 6px #22c55e66" }}
-            title="Connected"
-          />
+
         </div>
 
         {/* Context file chip */}
@@ -275,7 +265,10 @@ export default function ChatPanel({ width }: ChatPanelProps) {
             </span>
             <button
               onClick={() => setContextFile(null)}
-              className="text-[10px] text-[#555] hover:text-[#888]"
+              className="text-[11px] transition-colors"
+              style={{ color: "var(--ide-text-dim)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ide-text-dim)"; }}
             >
               ×
             </button>
@@ -287,18 +280,11 @@ export default function ChatPanel({ width }: ChatPanelProps) {
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4 ide-scrollbar">
         {messages.length === 0 && !isTyping ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 pb-4">
-            {/* <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center"
-              style={{
-                background: "linear-gradient(135deg, rgba(0,127,212,0.15) 0%, rgba(99,102,241,0.15) 100%)",
-                border: "1px solid rgba(99,102,241,0.2)",
-              }}
-            >
-
-            </div> */}
             <div className="text-center">
-              <p className="text-[12px] text-[#888] font-medium">Ask Karma anything</p>
-              <p className="text-[11px] text-[#555] mt-0.5">
+              <p className="text-[12.5px] font-semibold" style={{ color: "var(--ide-text-muted)" }}>
+                Ask AI anything
+              </p>
+              <p className="text-[11px] mt-0.5" style={{ color: "var(--ide-text-dim)" }}>
                 Build, refactor, or explain code
               </p>
             </div>
@@ -309,19 +295,21 @@ export default function ChatPanel({ width }: ChatPanelProps) {
                 <button
                   key={s}
                   onClick={() => setInput(s)}
-                  className="text-left px-3 py-2 rounded-lg text-[11px] transition-colors w-full"
+                  className="text-left px-3 py-2 rounded-lg text-[11.5px] transition-all w-full"
                   style={{
-                    background: "#252525",
-                    border: "1px solid #333",
-                    color: "#888",
+                    background: "var(--ide-suggestion-bg)",
+                    border: "1px solid var(--ide-suggestion-border)",
+                    color: "var(--ide-text-muted)",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = "#2d2d2d";
-                    (e.currentTarget as HTMLButtonElement).style.color = "#aaa";
+                    e.currentTarget.style.background = "var(--ide-suggestion-hover)";
+                    e.currentTarget.style.borderColor = "var(--ide-accent)";
+                    e.currentTarget.style.color = "var(--ide-text)";
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = "#252525";
-                    (e.currentTarget as HTMLButtonElement).style.color = "#888";
+                    e.currentTarget.style.background = "var(--ide-suggestion-bg)";
+                    e.currentTarget.style.borderColor = "var(--ide-suggestion-border)";
+                    e.currentTarget.style.color = "var(--ide-text-muted)";
                   }}
                 >
                   {s}
@@ -343,61 +331,57 @@ export default function ChatPanel({ width }: ChatPanelProps) {
       {/* ── Input ── */}
       <div
         className="p-2.5 shrink-0"
-        style={{ borderTop: "1px solid #2b2b2b" }}
+        style={{ borderTop: "1px solid var(--ide-border)" }}
       >
         <div
-          className="rounded-xl overflow-hidden"
+          className="rounded-xl overflow-hidden transition-all"
           style={{
-            background: "#252525",
-            border: "1px solid #333",
+            background: "var(--ide-input-bg)",
+            border: "1px solid var(--ide-input-border)",
           }}
-          onFocus={(e) => {
-            (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(0,127,212,0.5)";
+          onFocusCapture={(e) => {
+            (e.currentTarget as HTMLDivElement).style.borderColor = "var(--ide-accent)";
+            (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 0 3px var(--ide-accent-dim)";
           }}
-          onBlur={(e) => {
-            (e.currentTarget as HTMLDivElement).style.borderColor = "#333";
+          onBlurCapture={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+              (e.currentTarget as HTMLDivElement).style.borderColor = "var(--ide-input-border)";
+              (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
+            }
           }}
         >
           <textarea
             ref={textareaRef}
             value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              autoResize();
-            }}
+            onChange={(e) => { setInput(e.target.value); autoResize(); }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 handleSend();
               }
             }}
-            placeholder="Ask Karma… (Enter to send, Shift+Enter for newline)"
+            placeholder="Ask AI… (Enter to send)"
             rows={1}
             className="w-full px-3 pt-2.5 pb-1 text-[12px] outline-none resize-none"
-            style={{
-              background: "transparent",
-              color: "#ccc",
-            }}
+            style={{ background: "transparent", color: "var(--ide-text)" }}
           />
 
           {/* Toolbar */}
-          <div
-            className="flex items-center justify-between px-2 pb-2"
-          >
+          <div className="flex items-center justify-between px-2 pb-2">
             <div className="flex items-center gap-1">
               {/* @ context */}
               <button
                 title="Add context file"
                 onClick={() => setContextFile("currentFile")}
-                className="flex items-center gap-1 px-2 h-[22px] rounded text-[11px] transition-colors"
-                style={{ color: "#666", background: "transparent" }}
+                className="flex items-center gap-1 px-2 h-[22px] rounded-md text-[11px] transition-all"
+                style={{ color: "var(--ide-text-dim)" }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "#333";
-                  (e.currentTarget as HTMLButtonElement).style.color = "#aaa";
+                  e.currentTarget.style.background = "var(--ide-hover)";
+                  e.currentTarget.style.color = "var(--ide-text-muted)";
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-                  (e.currentTarget as HTMLButtonElement).style.color = "#666";
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = "var(--ide-text-dim)";
                 }}
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -410,15 +394,15 @@ export default function ChatPanel({ width }: ChatPanelProps) {
               {/* Attach */}
               <button
                 title="Attach file"
-                className="w-[22px] h-[22px] flex items-center justify-center rounded transition-colors"
-                style={{ color: "#666" }}
+                className="w-[22px] h-[22px] flex items-center justify-center rounded-md transition-all"
+                style={{ color: "var(--ide-text-dim)" }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "#333";
-                  (e.currentTarget as HTMLButtonElement).style.color = "#aaa";
+                  e.currentTarget.style.background = "var(--ide-hover)";
+                  e.currentTarget.style.color = "var(--ide-text-muted)";
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-                  (e.currentTarget as HTMLButtonElement).style.color = "#666";
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = "var(--ide-text-dim)";
                 }}
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -431,22 +415,21 @@ export default function ChatPanel({ width }: ChatPanelProps) {
             <button
               onClick={handleSend}
               disabled={!input.trim()}
-              className="flex items-center gap-1.5 px-2.5 h-[24px] rounded-lg text-[11px] font-medium text-white transition-all disabled:opacity-30"
+              className="flex items-center gap-1.5 px-2.5 h-[26px] rounded-lg text-[11px] font-semibold text-white transition-all disabled:opacity-30"
               style={{
-                background: input.trim()
-                  ? "linear-gradient(135deg, #007fd4 0%, #6366f1 100%)"
-                  : "#333",
+                background: input.trim() ? "var(--ide-accent)" : "var(--ide-hover-strong)",
+                color: input.trim() ? "#fff" : "var(--ide-text-dim)",
               }}
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
               </svg>
               Send
             </button>
           </div>
         </div>
-        <p className="text-[9px] text-[#3a3a3a] text-center mt-1.5">
-          Karma may make mistakes. Review important outputs.
+        <p className="text-[9px] text-center mt-1.5" style={{ color: "var(--ide-text-dim)" }}>
+          AI may make mistakes. Review important outputs.
         </p>
       </div>
     </div>

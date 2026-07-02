@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import axios from "axios";
 import { useTreeStructureStore } from "@/store/TreeStructureStore";
 import IdeShell from "@/components/ide/IdeShell";
-import {previewButton} from "."
+
 export default function Ide() {
   const { id } = useParams();
   const { setProjectId } = useTreeStructureStore();

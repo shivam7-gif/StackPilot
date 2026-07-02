@@ -167,11 +167,11 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
         style={{
           paddingLeft,
           background: isSelected
-            ? "#04395e"
+            ? "var(--ide-selected)"
             : hovered
-              ? "#2a2d2e"
+              ? "var(--ide-hover)"
               : "transparent",
-          color: isSelected ? "#ffffff" : "#cccccc",
+          color: isSelected ? "var(--ide-selected-text)" : "var(--ide-text)",
           transition: "background 0.08s",
         }}
         onContextMenu={(e) => handleContextMenu(e, resolvedNodePath)}
@@ -226,7 +226,7 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
           <span
             className="text-[13px] truncate flex-1"
             style={{
-              color: isSelected ? "#fff" : isReactFile ? "#4fc1ff" : "#cccccc",
+              color: isSelected ? "var(--ide-selected-text)" : isReactFile ? "var(--ide-react-color)" : "var(--ide-text)",
             }}
           >
             {fileFolderData.name}
