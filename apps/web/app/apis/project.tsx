@@ -9,7 +9,7 @@ export const createProjectApi = async () => {
   }
 };
 
-export const getProjectTree = async ({ projectId }) => {
+export const getProjectTree = async ({ projectId }: { projectId: string }) => {
   try {
     const response = await axios.get(`projects/${projectId}/tree`);
     console.log("API Response:", response.data);
