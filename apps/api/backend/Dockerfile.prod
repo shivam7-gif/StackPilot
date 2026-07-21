@@ -1,0 +1,23 @@
+FROM node:20-bookworm-slim
+
+# Install build tools required by node-pty and node-gyp
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package*.json ./
+# Install all dependencies (including devDependencies like tsx)
+RUN npm install
+
+COPY . .
+
+ENV NODE_ENV=production
+ENV PORT=5000
+EXPOSE 5000
+
+CMD ["npx", "tsx", "src/index.ts"]

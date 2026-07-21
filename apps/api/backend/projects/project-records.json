@@ -46,5 +46,23 @@
     "frontend": "react",
     "backend": "express",
     "createdAt": "2026-07-01T22:19:57.937Z"
+  },
+  {
+    "projectId": "d327d1cd-fd15-485a-8894-dd15bb69d872",
+    "projectName": "naming",
+    "baseName": "naming",
+    "folderName": "d327d1cd-fd15-485a-8894-dd15bb69d872",
+    "frontend": "react",
+    "backend": "express",
+    "createdAt": "2026-07-21T06:08:33.983Z"
+  },
+  {
+    "projectId": "1280944b-9521-4354-8ce8-3bb307f4146f",
+    "projectName": "smart",
+    "baseName": "smart",
+    "folderName": "1280944b-9521-4354-8ce8-3bb307f4146f",
+    "frontend": "react",
+    "backend": "express",
+    "createdAt": "2026-07-21T06:58:35.069Z"
   }
 ]

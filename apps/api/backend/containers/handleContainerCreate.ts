@@ -96,6 +96,9 @@ async function createContainer(
           },
         ],
       },
+      // Restrict sandbox resources to prevent DOS
+      Memory: 512 * 1024 * 1024, // 512MB RAM limit
+      NanoCPUs: 1 * 10e8, // 1 CPU core limit
     },
 
     Labels: {
