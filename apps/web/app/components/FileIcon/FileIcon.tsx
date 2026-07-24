@@ -9,7 +9,7 @@ import {
 import { SiTypescript, SiReact, SiSass } from "react-icons/si";
 import { TbJson, TbFile } from "react-icons/tb";
 
-export const FileIcon = ({ extension }) => {
+export const FileIcon = ({ extension }: { extension: string }) => {
   const iconProps = { height: "16px", width: "16px" };
 
   switch (extension) {

@@ -1,7 +1,7 @@
 import{useEffect , useRef} from "react"
 
 export function useCursor(){
-  const cursorRef = useRef<HTMLDIVElement>(null)
+  const cursorRef = useRef<HTMLDivElement>(null)
   useEffect(()=>{
     const cursor = cursorRef.current
     if(!cursor) return
