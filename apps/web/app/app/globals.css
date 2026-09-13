@@ -18,6 +18,18 @@
   --ide-border:           #222222;
   --ide-border-subtle:    rgba(255,255,255,0.08);
 
+  /* StackPilot Marketing Theme (Vivid Theory Dark Agency Aesthetic) */
+  --sp-bg:                #0a0a0a;
+  --sp-bg-card:           #121212;
+  --sp-bg-card-hover:     #171717;
+  --sp-border:            rgba(255, 255, 255, 0.08);
+  --sp-border-strong:     rgba(255, 255, 255, 0.16);
+  --sp-border-amber:      rgba(249, 115, 22, 0.35);
+  --sp-amber:             #f97316;
+  --sp-amber-dim:         rgba(249, 115, 22, 0.15);
+  --sp-amber-glow:        rgba(217, 84, 12, 0.3);
+  --sp-orange-gradient:   linear-gradient(180deg, #d9540c 0%, #0a0a0a 100%);
+
   /* Accent */
   --ide-accent:           #007aff;
   --ide-accent-hover:     #3395ff;
@@ -360,3 +372,66 @@ body {
   color: var(--ide-text-muted);
   user-select: none;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   STACKPILOT LANDING PAGE UTILITIES (VIVID THEORY STYLE)
+═══════════════════════════════════════════════════════════ */
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: rgba(249, 115, 22, 0.3);
+  color: #ffffff;
+}
+
+.sp-hero-glow {
+  background: radial-gradient(circle at 50% -10%, rgba(217, 84, 12, 0.32) 0%, rgba(10, 10, 10, 0) 65%);
+}
+
+.sp-statement-glow {
+  background: radial-gradient(ellipse at 50% 60%, rgba(217, 84, 12, 0.28) 0%, rgba(10, 10, 10, 0) 70%);
+}
+
+.sp-pill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.03);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: #a3a3a3;
+  transition: all 0.2s ease;
+}
+
+.sp-pill-tag:hover {
+  border-color: rgba(249, 115, 22, 0.4);
+  color: #ffffff;
+  background-color: rgba(249, 115, 22, 0.06);
+}
+
+.sp-card {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #111111;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sp-card:hover {
+  border-color: rgba(249, 115, 22, 0.35);
+  box-shadow: 0 12px 30px -10px rgba(217, 84, 12, 0.12);
+  transform: translateY(-2px);
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.08); }
+}
+
+.sp-pulse-dot {
+  animation: pulseGlow 3s infinite ease-in-out;
+}
+

@@ -1,73 +1,62 @@
-"use client"
-import { useState } from "react"
-import { IBM_Plex_Mono } from "next/font/google"
+'use client'
 
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-})
+import React, { useState } from 'react'
+import Navbar from '@/components/landing/Navbar'
+import HeroSection from '@/components/landing/HeroSection'
+import ProblemSection from '@/components/landing/ProblemSection'
+import SolutionSection from '@/components/landing/SolutionSection'
+import HSeriesSection from '@/components/landing/HSeriesSection'
+import WorkflowSection from '@/components/landing/WorkflowSection'
+import TechStackSection from '@/components/landing/TechStackSection'
+import MidPageStatement from '@/components/landing/MidPageStatement'
+import FutureImpactSection from '@/components/landing/FutureImpactSection'
+import Footer from '@/components/landing/Footer'
+import WaitlistModal from '@/components/landing/WaitlistModal'
+import AmberCursor from '@/components/landing/AmberCursor'
 
-export default function Page() {
-  const [menuOpen, setMenuOpen] = useState(false)
+export default function StackPilotLandingPage() {
+  const [waitlistOpen, setWaitlistOpen] = useState(false)
+
+  const handleOpenWaitlist = () => setWaitlistOpen(true)
+  const handleCloseWaitlist = () => setWaitlistOpen(false)
 
   return (
-    <main className={`${ibmPlexMono.className} min-h-screen flex items-center justify-center bg-[#E4E4E4] relative`}>
-      <nav className="absolute top-0 left-0 w-full h-16 flex items-center justify-between px-6 z-20">
-        <div className="flex items-center gap-2">
-          <span className="text-[#1a1a1a] font-bold text-xl tracking-tight">KARMA</span>
-        </div>
+    <main className="min-h-screen bg-[#0a0a0a] text-white selection:bg-amber-500/30 selection:text-white relative overflow-x-hidden">
+      {/* Subtle Agency Amber Cursor Accent */}
+      <AmberCursor />
 
-        <div className="absolute left-1/2 -translate-x-1/2">
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="text-[#1a1a1a] text-base tracking-widest font-bold uppercase"
-          >
-            {menuOpen ? "× MENU" : "+ MENU"}
-          </button>
-        </div>
+      {/* Fixed Navigation Bar */}
+      <Navbar onOpenWaitlist={handleOpenWaitlist} />
 
-        <div className="flex items-center gap-3">
-          <p className="text-xs tracking-widest text-right text-[#1a1a1a] uppercase leading-tight">
-            A 30-MINUTE CALL TO CLARIFY YOUR <br />
-            NEXT STEPS. <span className="font-bold">ZERO OBLIGATIONS</span>
-          </p>
-          <div className="w-9 h-9 rounded-full bg-gray-300 overflow-hidden">
-            <img src="" alt="avatar" className="w-full h-full object-cover" />
-          </div>
-          <button className="w-9 h-9 rounded-full bg-black text-white text-lg flex items-center justify-center">
-            +
-          </button>
-        </div>
-      </nav>
+      {/* 1. Hero Section with Oversized Kinetic Type */}
+      <HeroSection onOpenWaitlist={handleOpenWaitlist} />
 
-      {menuOpen && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 w-72 bg-black text-white z-30 p-8 flex flex-col gap-4">
-          <span className="font-bold text-xl tracking-tight text-white">KARMA</span>
-          <ul className="flex flex-col gap-3 mt-4">
-            {["HOME", "ABOUT", "CASE STUDIES", "NEWS", "CONTACT", "CAREERS"].map((item) => (
-              <li
-                key={item}
-                className="text-base tracking-widest cursor-pointer hover:opacity-60 transition-opacity"
-              >
-                {item}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-6 border-t border-white/20 pt-6">
-            <p className="text-xl font-bold tracking-wider">KARMA.com</p>
-          </div>
-        </div>
-      )}
+      {/* 2. Section 01: The Problem */}
+      <ProblemSection />
 
-      <div className="absolute inset-0 flex flex-row items-stretch justify-around">
-        <div className="h-full w-[800px] bg-[#9c9c9c] opacity-20" >
-          <img src="/photos/frontPage.jpg" alt="avatar" className="w-full h-full object-cover" />
-        </div>
-        <div className="h-full w-[1px] bg-[#9c9c9c] opacity-20" />
-        <div className="h-full w-[1px] bg-[#9c9c9c] opacity-20" />
-        <div className="h-full w-[1px] bg-[#9c9c9c] opacity-20" />
-        <div className="h-full w-[1px] bg-[#9c9c9c] opacity-20" />
-      </div>
+      {/* 3. Section 02: Our Solution */}
+      <SolutionSection />
+
+      {/* 4. Section 03: Karma H-Series Parallel Code Generation */}
+      <HSeriesSection />
+
+      {/* 5. Section 04: Workflow (From prompt to production) */}
+      <WorkflowSection />
+
+      {/* 6. Section 05: Tech Stack (Under the Hood) */}
+      <TechStackSection />
+
+      {/* 7. Big Statement / Mid-Page CTA */}
+      <MidPageStatement onOpenWaitlist={handleOpenWaitlist} />
+
+      {/* 8. Horizon & Ecosystem Impact */}
+      <FutureImpactSection />
+
+      {/* 9. Minimal Footer */}
+      <Footer />
+
+      {/* Interactive Waitlist Modal */}
+      <WaitlistModal isOpen={waitlistOpen} onClose={handleCloseWaitlist} />
     </main>
   )
 }

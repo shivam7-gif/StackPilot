@@ -12,8 +12,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "StackPilot",
-  description: "StackPilot",
+  title: "StackPilot AI — AI that builds everything with you",
+  description: "An autonomous multi-agent platform that turns ideas into working, production-ready applications with persistent memory and parallel code generation.",
+  keywords: ["AI coding", "Autonomous software engineering", "Multi-agent systems", "Karma Engine", "Developer Tools"],
+  openGraph: {
+    title: "StackPilot AI — AI that builds everything with you",
+    description: "An autonomous multi-agent platform that turns ideas into working, production-ready applications.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -24,11 +30,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-[#0a0a0a] text-white selection:bg-amber-500/30 selection:text-white">
         {children}
-    
       </body>
     </html>
   );
