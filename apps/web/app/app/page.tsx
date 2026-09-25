@@ -1,30 +1,28 @@
-import Navbar from "@/components/LandingPage/Navbar";
-import Hero from "@/components/LandingPage/Hero";
-import Features from "@/components/LandingPage/Features";
-import AgentShowcase from "@/components/LandingPage/AgentShowcase";
-import HowItWorks from "@/components/LandingPage/HowItWorks";
-import Architecture from "@/components/LandingPage/Architecture";
-import CTASection from "@/components/LandingPage/CTASection";
-import Footer from "@/components/LandingPage/Footer";
+"use client";
 
-export default function StackPilotLandingPage() {
+import Spline from '@splinetool/react-spline';
+import Navbar from '@/components/navbar/Navbar';
+
+export default function Home() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-amber-500/30 selection:text-white flex flex-col">
-      {/* Sticky Glass Navbar */}
+    <main className="relative min-h-screen w-full overflow-hidden bg-black">
+      {/* 3D Interactive Spline Canvas */}
+      <div className="absolute inset-0 z-0 h-full w-full">
+        <Spline scene="https://prod.spline.design/sud5WLpv4tSe8n43/scene.splinecode" />
+      </div>
+
+      {/* Top Navbar */}
       <Navbar />
 
-      {/* Main Content Sections */}
-      <main className="flex-1">
-        <Hero />
-        <Features />
-        <AgentShowcase />
-        <HowItWorks />
-        <Architecture />
-        <CTASection />
-      </main>
-
-      {/* Footer */}
-      <Footer />
-    </div>
+      {/* Action Buttons placed at the bottom */}
+      <div className="pointer-events-none fixed bottom-12 left-0 right-0 z-20 flex items-center justify-center gap-4 px-6">
+        <button className="pointer-events-auto rounded-full bg-mist px-7 py-3 text-sm font-medium text-ink shadow-lg shadow-black/30 transition hover:bg-white active:scale-95">
+          Sign up
+        </button>
+        <button className="pointer-events-auto rounded-full border border-mist/40 bg-black/30 px-7 py-3 text-sm font-medium text-mist backdrop-blur-md shadow-lg shadow-black/30 transition hover:bg-mist hover:text-ink active:scale-95">
+          Documentation
+        </button>
+      </div>
+    </main>
   );
 }

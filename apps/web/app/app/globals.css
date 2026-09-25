@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  --color-mist: #e8ecf1;
+  --color-ink: #090d16;
+  --color-dusk: #111827;
+  --color-sun: #f59e0b;
+  --color-flare: #d97706;
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+.max-w-copy {
+  max-width: 42rem;
+}
+
 @layer base {
   :root {
     --background: 10 10 10;
