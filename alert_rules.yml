@@ -1,0 +1,134 @@
+# ==============================================================================
+# StackPilot - Prometheus Metrics Checking & Alert Rules
+# File: alert_rules.yml
+# Purpose: Health, performance, and operational threshold checks
+# ==============================================================================
+
+groups:
+  # ----------------------------------------------------------------------------
+  # Group 1: Service Availability & Health Checks
+  # ----------------------------------------------------------------------------
+  - name: service_availability_checks
+    rules:
+      - alert: ServiceInstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          tier: "{{ $labels.tier }}"
+        annotations:
+          summary: "Service instance {{ $labels.instance }} is down"
+          description: "Target {{ $labels.job }} ({{ $labels.instance }}) has been unreachable for more than 1 minute."
+
+  # ----------------------------------------------------------------------------
+  # Group 2: StackPilot Backend API Metrics Checks
+  # ----------------------------------------------------------------------------
+  - name: backend_metrics_checks
+    rules:
+      # Check 1: 5xx Error Rate > 5% over 5 minutes
+      - alert: BackendHighHttp5xxErrorRate
+        expr: |
+          (
+            sum(rate(stackpilot_http_requests_total{status_code=~"5.."}[5m]))
+            /
+            sum(rate(stackpilot_http_requests_total[5m]))
+          ) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+          service: backend-api
+        annotations:
+          summary: "Backend HTTP 5xx error rate is above 5%"
+          description: "Over 5% of requests to {{ $labels.route }} are failing with 5xx status codes."
+
+      # Check 2: High Request Latency (p95 > 1s)
+      - alert: BackendHighRequestLatencyP95
+        expr: |
+          histogram_quantile(0.95, sum(rate(stackpilot_http_request_duration_seconds_bucket[5m])) by (le, route)) > 1.0
+        for: 3m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "Backend p95 latency is exceeding 1 second"
+          description: "Route {{ $labels.route }} p95 response time is {{ $value | printf \"%.2f\" }}s."
+
+      # Check 3: Node.js Event Loop Lag (> 150ms)
+      - alert: NodeJSEventLoopLagHigh
+        expr: stackpilot_backend_nodejs_eventloop_lag_seconds > 0.15
+        for: 2m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "Node.js Event Loop lag is abnormally high"
+          description: "The event loop lag on {{ $labels.instance }} is {{ $value }} seconds, indicating CPU blocking or heavy sync work."
+
+      # Check 4: Node.js V8 Heap Exhaustion (> 85% used)
+      - alert: NodeJSHeapMemoryHigh
+        expr: |
+          (stackpilot_backend_nodejs_heap_size_used_bytes / stackpilot_backend_nodejs_heap_size_total_bytes) * 100 > 85
+        for: 3m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "Node.js V8 Heap memory usage above 85%"
+          description: "V8 memory usage is at {{ $value | printf \"%.1f\" }}% of allocated heap on {{ $labels.instance }}."
+
+      # Check 5: Active In-flight Request Spike
+      - alert: InFlightRequestsSpike
+        expr: stackpilot_http_active_requests > 200
+        for: 1m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "Spike in active in-flight HTTP requests"
+          description: "Currently {{ $value }} requests are executing concurrently."
+
+      # Check 6: Realtime WebSocket/Socket.IO Connection Saturation
+      - alert: HighSocketIoConnections
+        expr: sum(stackpilot_socket_io_active_connections) > 1000
+        for: 2m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "High number of active Socket.IO connections"
+          description: "Active Socket.IO clients count is {{ $value }}."
+
+  # ----------------------------------------------------------------------------
+  # Group 3: System & Hardware Metrics Checks (Node Exporter)
+  # ----------------------------------------------------------------------------
+  - name: system_hardware_checks
+    rules:
+      # CPU Usage > 85%
+      - alert: HostHighCpuLoad
+        expr: (1 - avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host CPU utilization is over 85%"
+          description: "Host {{ $labels.instance }} CPU load is {{ $value | printf \"%.1f\" }}%."
+
+      # RAM Usage > 90%
+      - alert: HostHighMemoryLoad
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Host memory utilization is over 90%"
+          description: "Host {{ $labels.instance }} has less than 10% available memory."
+
+      # Disk Space < 15%
+      - alert: HostLowDiskSpace
+        expr: (node_filesystem_free_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 15
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Host root disk space is running out"
+          description: "Host {{ $labels.instance }} only has {{ $value | printf \"%.1f\" }}% free disk remaining."

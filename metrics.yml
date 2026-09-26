@@ -1,0 +1,142 @@
+# ==============================================================================
+# StackPilot - Prometheus Metrics Configuration
+# File: metrics.yml
+# Purpose: Prometheus scraping configuration and metrics checking targets
+# ==============================================================================
+
+global:
+  scrape_interval: 15s       # Scrape targets every 15 seconds
+  evaluation_interval: 15s   # Evaluate alerting rules every 15 seconds
+  scrape_timeout: 10s        # Abort scrape if target takes longer than 10s
+
+  external_labels:
+    monitor: 'stackpilot-monitor'
+    cluster: 'stackpilot-local'
+    environment: 'development'
+
+# Alerting and metrics checking rules
+rule_files:
+  - 'alert_rules.yml'
+  - 'monitoring/alert_rules.yml'
+
+# Alertmanager targets (if alertmanager is deployed)
+alerting:
+  alertmanagers:
+    - scheme: http
+      static_configs:
+        - targets:
+            - 'alertmanager:9093'
+
+# ==============================================================================
+# Scrape Configurations for Metrics Checking
+# ==============================================================================
+scrape_configs:
+  # ----------------------------------------------------------------------------
+  # 1. Prometheus Internal Metrics (Self-checking)
+  # ----------------------------------------------------------------------------
+  - job_name: 'prometheus'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          tier: 'monitoring'
+
+  # ----------------------------------------------------------------------------
+  # 2. StackPilot Backend API (Express + Socket.IO + Sandboxes)
+  #    Endpoint: http://localhost:5000/metrics
+  # ----------------------------------------------------------------------------
+  - job_name: 'stackpilot-backend'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: '/metrics'
+    scheme: 'http'
+    static_configs:
+      - targets:
+          - 'host.docker.internal:5000'
+          - 'localhost:5000'
+        labels:
+          app: 'stackpilot'
+          tier: 'backend'
+          service: 'backend-api'
+
+  # ----------------------------------------------------------------------------
+  # 3. StackPilot Next.js Web App
+  #    Endpoint: http://localhost:3000/metrics
+  # ----------------------------------------------------------------------------
+  - job_name: 'stackpilot-frontend'
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    metrics_path: '/metrics'
+    scheme: 'http'
+    static_configs:
+      - targets:
+          - 'host.docker.internal:3000'
+          - 'localhost:3000'
+        labels:
+          app: 'stackpilot'
+          tier: 'frontend'
+          service: 'web-app'
+
+  # ----------------------------------------------------------------------------
+  # 4. StackPilot AI Engine / Microservices
+  #    Endpoint: http://localhost:8000/metrics
+  # ----------------------------------------------------------------------------
+  - job_name: 'stackpilot-ai-engine'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: '/metrics'
+    scheme: 'http'
+    static_configs:
+      - targets:
+          - 'host.docker.internal:8000'
+          - 'localhost:8000'
+        labels:
+          app: 'stackpilot'
+          tier: 'ai-engine'
+          service: 'langgraph-engine'
+
+  # ----------------------------------------------------------------------------
+  # 5. Host & OS System Metrics (Prometheus Node Exporter)
+  #    Collects: CPU, Memory, Disk, Network I/O
+  # ----------------------------------------------------------------------------
+  - job_name: 'node-exporter'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets:
+          - 'node-exporter:9100'
+          - 'localhost:9100'
+        labels:
+          tier: 'infrastructure'
+          service: 'node-exporter'
+
+  # ----------------------------------------------------------------------------
+  # 6. Docker Container Metrics (cAdvisor)
+  #    Collects: Container CPU, Memory, Network, Filesystem
+  # ----------------------------------------------------------------------------
+  - job_name: 'cadvisor'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets:
+          - 'cadvisor:8080'
+          - 'localhost:8080'
+        labels:
+          tier: 'infrastructure'
+          service: 'cadvisor'
+
+  # ----------------------------------------------------------------------------
+  # 7. Sandbox Project Dev Servers (Dynamic preview containers on port 5173)
+  # ----------------------------------------------------------------------------
+  - job_name: 'stackpilot-sandboxes'
+    scrape_interval: 30s
+    scrape_timeout: 5s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+          - 'host.docker.internal:5173'
+        labels:
+          app: 'stackpilot'
+          tier: 'sandboxes'
+          service: 'vite-preview'

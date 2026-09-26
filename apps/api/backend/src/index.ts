@@ -18,6 +18,11 @@ import {
   releaseProjectWatcher,
 } from "./sockets/editorRooms.js";
 import { handleContainerCreate } from "../containers/handleContainerCreate.js";
+import {
+  getMetricsHandler,
+  metricsMiddleware,
+  socketIoConnections,
+} from "./monitoring/metrics.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
@@ -32,6 +37,13 @@ const io = new Server(server, {
 });
 
 app.use(helmet());
+app.use(cors());
+
+// Prometheus scrape endpoint (exempt from rate limits)
+app.get("/metrics", getMetricsHandler);
+
+// Metrics collection middleware for tracking requests & latency
+app.use(metricsMiddleware);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -39,8 +51,6 @@ const limiter = rateLimit({
   message: "Too many requests from this IP, please try again after 15 minutes"
 });
 app.use(limiter);
-
-app.use(cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -66,11 +76,17 @@ app.get("/_debug/project-records", async (_req, res) => {
 app.use("/", routes);
 
 io.on("connection", (socket) => {
+  socketIoConnections.inc({ namespace: "/" });
   console.log(`A user connected : ${socket.id}`);
   handleProjectSocket(socket);
+
+  socket.on("disconnect", () => {
+    socketIoConnections.dec({ namespace: "/" });
+  });
 });
 const editorNamespace = io.of("/editor");
 editorNamespace.on("connection", async (socket) => {
+  socketIoConnections.inc({ namespace: "/editor" });
   const rawProjectId = socket.handshake.query?.projectId;
   const projectId = Array.isArray(rawProjectId)
     ? rawProjectId[0]
@@ -79,6 +95,7 @@ editorNamespace.on("connection", async (socket) => {
   if (!projectId || typeof projectId !== "string") {
     socket.emit("error", { data: "projectId is required" });
     socket.disconnect(true);
+    socketIoConnections.dec({ namespace: "/editor" });
     return;
   }
 
@@ -102,6 +119,7 @@ editorNamespace.on("connection", async (socket) => {
   handleEditorSocketEvents(socket, projectId, editorNamespace);
 
   socket.on("disconnect", async () => {
+    socketIoConnections.dec({ namespace: "/editor" });
     await releaseProjectWatcher(projectId);
     await emitRoomPresence(editorNamespace, projectId);
     console.log(`Editor disconnected: ${socket.id} left ${roomId}`);
@@ -111,6 +129,7 @@ editorNamespace.on("connection", async (socket) => {
 const terminalNamespace = io.of("/terminal");
 
 terminalNamespace.on("connection", async (socket) => {
+  socketIoConnections.inc({ namespace: "/terminal" });
   const rawProjectId = socket.handshake.query?.projectId;
 
   const projectId = Array.isArray(rawProjectId)
@@ -123,6 +142,7 @@ terminalNamespace.on("connection", async (socket) => {
     });
 
     socket.disconnect(true);
+    socketIoConnections.dec({ namespace: "/terminal" });
     return;
   }
 
@@ -147,6 +167,10 @@ terminalNamespace.on("connection", async (socket) => {
       data: "Failed to start sandbox container",
     });
   }
+
+  socket.on("disconnect", () => {
+    socketIoConnections.dec({ namespace: "/terminal" });
+  });
 });
 
 server.listen(PORT, () => {

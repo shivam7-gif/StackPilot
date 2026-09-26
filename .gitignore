@@ -70,3 +70,8 @@ desktop.ini
 
 # Generated projects (your scaffolded output)
 apps/api/backend/projects/
+
+# Prometheus binaries and local monitoring data
+prometheus.exe
+promtool.exe
+data/
