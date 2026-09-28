@@ -111,6 +111,8 @@ const TerminalInstance = memo(
       const socket = io(`${API_BASE_URL}/terminal`, {
         transports: ["polling", "websocket"],
         query: { projectId, terminalId },
+        auth: { projectId, terminalId },
+        forceNew: true,
       });
       socketRef.current = socket;
 

@@ -103,7 +103,7 @@ io.on("connection", (socket) => {
 const editorNamespace = io.of("/editor");
 editorNamespace.on("connection", async (socket) => {
   socketIoConnections.inc({ namespace: "/editor" });
-  const rawProjectId = socket.handshake.query?.projectId;
+  const rawProjectId = socket.handshake.auth?.projectId ?? socket.handshake.query?.projectId;
   const projectId = Array.isArray(rawProjectId)
     ? rawProjectId[0]
     : rawProjectId;
@@ -146,7 +146,7 @@ const terminalNamespace = io.of("/terminal");
 
 terminalNamespace.on("connection", async (socket) => {
   socketIoConnections.inc({ namespace: "/terminal" });
-  const rawProjectId = socket.handshake.query?.projectId;
+  const rawProjectId = socket.handshake.auth?.projectId ?? socket.handshake.query?.projectId;
 
   const projectId = Array.isArray(rawProjectId)
     ? rawProjectId[0]

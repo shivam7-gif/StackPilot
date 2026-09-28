@@ -63,7 +63,9 @@ export default function IdeShell({ projectName }: IdeShellProps) {
       `${API_BASE_URL}/editor`,
       {
         query: { projectId: projectIdFromUrl as string },
+        auth: { projectId: projectIdFromUrl as string },
         transports: ["polling", "websocket"],
+        forceNew: true,
       }
     );
 
