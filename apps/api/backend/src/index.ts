@@ -73,6 +73,10 @@ app.get("/_debug/project-records", async (_req, res) => {
 });
 
 // app.use("/api", routes);
+app.get("/", (_req, res) => {
+  res.status(200).json({ status: "ok", message: "StackPilot API is running" });
+});
+
 app.use("/", routes);
 
 io.on("connection", (socket) => {
