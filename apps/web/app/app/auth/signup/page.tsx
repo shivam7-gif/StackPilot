@@ -1,6 +1,13 @@
 import Link from "next/link";
+import {useRouter} from "next/link";
 
 export default function SignupPage() {
+    const router = useRouter();
+
+    function handleLogin(){
+        router.push("/auth/login")
+    }
+    
     return (
         <main className="grid min-h-screen w-full bg-white md:grid-cols-2">
             {/* Left: blank media panel */}
@@ -53,7 +60,7 @@ export default function SignupPage() {
                     </button>
                 </form>
 
-                <p className="text-center text-sm text-ink/50">
+                <p className="text-center text-sm text-ink/50" onClick={handleLogin}>
                     Already have an account?{" "}
                     <Link href="/auth/login" className="text-ink underline underline-offset-4">
                         Log in
