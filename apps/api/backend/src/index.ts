@@ -1,3 +1,14 @@
+console.log("=== STACKPILOT BACKEND BOOTING ===");
+console.log("Node version:", process.version);
+console.log("Environment PORT:", process.env.PORT);
+
+process.on("uncaughtException", (err) => {
+  console.error("FATAL UNCAUGHT EXCEPTION:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("FATAL UNHANDLED REJECTION:", reason);
+});
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
