@@ -43,7 +43,7 @@ export default function IdeShellV2({ projectName }: IdeShellV2Props) {
     setProjectId(projectIdFromUrl as string);
 
     const editorSocketConn = io(
-      `${API_BASE_URL}/editor?projectId=${projectIdFromUrl}`,
+      `${API_BASE_URL}/editor`,
       { query: { projectId: projectIdFromUrl as string } }
     );
 

@@ -3,6 +3,7 @@ import { Namespace, Socket } from "socket.io";
 import path from "path";
 import { PROJECTS_DIR } from "../src/services/project.service.js";
 import { getProjectRoomId } from "../src/sockets/editorRooms.js";
+import { resolveProjectHostPath } from "../containers/resolveProjectHostPath.js";
 
 interface FilePayload {
   pathToFileFolder: string;
@@ -42,12 +43,6 @@ function getImageMimeType(ext: string): string {
   }
 }
 
-function isPathInProject(projectId: string, filePath: string): boolean {
-  const resolved = path.resolve(filePath);
-  const projectRoot = path.resolve(PROJECTS_DIR, projectId);
-  return resolved === projectRoot || resolved.startsWith(`${projectRoot}${path.sep}`);
-}
-
 export const handleEditorSocketEvents = (
   socket: Socket,
   projectId: string,
@@ -55,9 +50,16 @@ export const handleEditorSocketEvents = (
 ): void => {
   const roomId = getProjectRoomId(projectId);
 
-  const rejectInvalidPath = (filePath: string): boolean => {
-    if (!isPathInProject(projectId, filePath)) {
-      socket.emit("error", { data: "File path is outside the project" });
+  const resolveTarget = async (filePath: string): Promise<string> => {
+    if (path.isAbsolute(filePath)) return path.resolve(filePath);
+    const hostPath = await resolveProjectHostPath(projectId);
+    return path.resolve(hostPath, filePath);
+  };
+
+  const rejectInvalidPath = (targetPath: string): boolean => {
+    const projectsDir = path.resolve(PROJECTS_DIR);
+    if (!targetPath.startsWith(`${projectsDir}${path.sep}`) && targetPath !== projectsDir) {
+      socket.emit("error", { data: "File path is outside the project directory" });
       return true;
     }
     return false;
@@ -72,10 +74,11 @@ export const handleEditorSocketEvents = (
         return;
       }
 
-      if (rejectInvalidPath(pathToFileFolder)) return;
+      const targetPath = await resolveTarget(pathToFileFolder);
+      if (rejectInvalidPath(targetPath)) return;
 
       try {
-        await fs.writeFile(pathToFileFolder, data, "utf-8");
+        await fs.writeFile(targetPath, data, "utf-8");
 
         socket.emit("writeFileSuccess", {
           path: pathToFileFolder,
@@ -89,50 +92,12 @@ export const handleEditorSocketEvents = (
         });
       } catch (error) {
         console.error("Error writing file:", error);
-
         socket.emit("error", {
           data: "Error writing file",
         });
       }
     },
   );
-
-  // Create File
-  socket.on("createFile", async ({ pathToFileFolder }: FilePayload) => {
-    if (!pathToFileFolder) {
-      socket.emit("error", { data: "Invalid createFile payload" });
-      return;
-    }
-
-    if (rejectInvalidPath(pathToFileFolder)) return;
-
-    try {
-      await fs.access(pathToFileFolder);
-
-      socket.emit("error", {
-        data: "File already exists",
-      });
-    } catch {
-      try {
-        await fs.writeFile(pathToFileFolder, "", "utf-8");
-
-        socket.emit("createFileSuccess", {
-          data: "File created successfully",
-        });
-
-        editorNamespace.to(roomId).emit("fileSystemChanged", {
-          type: "createFile",
-          path: pathToFileFolder,
-        });
-      } catch (error) {
-        console.error("Error creating file:", error);
-
-        socket.emit("error", {
-          data: "Error creating file",
-        });
-      }
-    }
-  });
 
   // Read File
   socket.on("readFile", async ({ pathToFileFolder }: FilePayload) => {
@@ -141,13 +106,14 @@ export const handleEditorSocketEvents = (
       return;
     }
 
-    if (rejectInvalidPath(pathToFileFolder)) return;
+    const targetPath = await resolveTarget(pathToFileFolder);
+    if (rejectInvalidPath(targetPath)) return;
 
-    const ext = path.extname(pathToFileFolder);
+    const ext = path.extname(targetPath);
 
     try {
       if (IMAGE_EXTENSIONS.has(ext.toLowerCase())) {
-        const buffer = await fs.readFile(pathToFileFolder);
+        const buffer = await fs.readFile(targetPath);
         const mimeType = getImageMimeType(ext);
         const value = `data:${mimeType};base64,${buffer.toString("base64")}`;
 
@@ -159,46 +125,40 @@ export const handleEditorSocketEvents = (
         return;
       }
 
-      const content = await fs.readFile(pathToFileFolder, "utf-8");
+      const content = await fs.readFile(targetPath, "utf-8");
 
       socket.emit("readFileSuccess", {
         path: pathToFileFolder,
         value: content,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error reading file:", error);
-
       socket.emit("error", {
-        data: "Error reading file",
+        data: `Error reading file: ${error?.message || error}`,
       });
     }
   });
 
-  // Delete File
-  socket.on("deleteFile", async ({ pathToFileFolder }: FilePayload) => {
+  // Create File
+  socket.on("createFile", async ({ pathToFileFolder }: FilePayload) => {
     if (!pathToFileFolder) {
-      socket.emit("error", { data: "Invalid deleteFile payload" });
+      socket.emit("error", { data: "Invalid createFile payload" });
       return;
     }
 
-    if (rejectInvalidPath(pathToFileFolder)) return;
+    const targetPath = await resolveTarget(pathToFileFolder);
+    if (rejectInvalidPath(targetPath)) return;
 
     try {
-      await fs.unlink(pathToFileFolder);
-
-      socket.emit("deleteFileSuccess", {
-        data: "File deleted successfully",
-      });
-
-      editorNamespace.to(roomId).emit("fileSystemChanged", {
-        type: "deleteFile",
+      await fs.writeFile(targetPath, "");
+      socket.emit("createFileSuccess", {
         path: pathToFileFolder,
+        data: "File created successfully",
       });
-    } catch (error) {
-      console.error("Error deleting file:", error);
-
+    } catch (error: any) {
+      console.error("Error creating file:", error);
       socket.emit("error", {
-        data: "Error deleting file",
+        data: "Error creating file",
       });
     }
   });
@@ -210,98 +170,80 @@ export const handleEditorSocketEvents = (
       return;
     }
 
-    if (rejectInvalidPath(pathToFileFolder)) return;
+    const targetPath = await resolveTarget(pathToFileFolder);
+    if (rejectInvalidPath(targetPath)) return;
 
     try {
-      await fs.mkdir(pathToFileFolder, {
-        recursive: true,
-      });
-
+      await fs.mkdir(targetPath, { recursive: true });
       socket.emit("createFolderSuccess", {
-        data: "Folder created successfully",
-      });
-
-      editorNamespace.to(roomId).emit("fileSystemChanged", {
-        type: "createFolder",
         path: pathToFileFolder,
+        data: "Folder created successfully",
       });
     } catch (error) {
       console.error("Error creating folder:", error);
-
       socket.emit("error", {
         data: "Error creating folder",
       });
     }
   });
 
-  // Rename File or Folder
+  // Delete File
+  socket.on("deleteFile", async ({ pathToFileFolder }: FilePayload) => {
+    if (!pathToFileFolder) {
+      socket.emit("error", { data: "Invalid deleteFile payload" });
+      return;
+    }
+
+    const targetPath = await resolveTarget(pathToFileFolder);
+    if (rejectInvalidPath(targetPath)) return;
+
+    try {
+      await fs.rm(targetPath, { recursive: true, force: true });
+      socket.emit("deleteFileSuccess", {
+        path: pathToFileFolder,
+        data: "File deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      socket.emit("error", {
+        data: "Error deleting file",
+      });
+    }
+  });
+
+  // Rename Path
   socket.on(
     "renamePath",
     async ({
       pathToFileFolder,
       newPath,
-    }: FilePayload & { newPath: string }) => {
+    }: {
+      pathToFileFolder: string;
+      newPath: string;
+    }) => {
       if (!pathToFileFolder || !newPath) {
         socket.emit("error", { data: "Invalid renamePath payload" });
         return;
       }
 
-      if (rejectInvalidPath(pathToFileFolder) || rejectInvalidPath(newPath)) {
-        return;
-      }
+      const targetPath = await resolveTarget(pathToFileFolder);
+      const targetNewPath = await resolveTarget(newPath);
+
+      if (rejectInvalidPath(targetPath) || rejectInvalidPath(targetNewPath)) return;
 
       try {
-        await fs.rename(pathToFileFolder, newPath);
-
+        await fs.rename(targetPath, targetNewPath);
         socket.emit("renamePathSuccess", {
           oldPath: pathToFileFolder,
           newPath,
-        });
-
-        editorNamespace.to(roomId).emit("fileSystemChanged", {
-          type: "renamePath",
-          path: pathToFileFolder,
-          newPath,
+          data: "Renamed successfully",
         });
       } catch (error) {
         console.error("Error renaming path:", error);
-
         socket.emit("error", {
-          data: "Error renaming file or folder",
+          data: "Error renaming path",
         });
       }
     },
   );
-
-  // Delete Folder
-  socket.on("deleteFolder", async ({ pathToFileFolder }: FilePayload) => {
-    if (!pathToFileFolder) {
-      socket.emit("error", { data: "Invalid deleteFolder payload" });
-      return;
-    }
-
-    if (rejectInvalidPath(pathToFileFolder)) return;
-
-    try {
-      await fs.rm(pathToFileFolder, {
-        recursive: true,
-        force: true,
-      });
-
-      socket.emit("deleteFolderSuccess", {
-        data: "Folder deleted successfully",
-      });
-
-      editorNamespace.to(roomId).emit("fileSystemChanged", {
-        type: "deleteFolder",
-        path: pathToFileFolder,
-      });
-    } catch (error) {
-      console.error("Error deleting folder:", error);
-
-      socket.emit("error", {
-        data: "Error deleting folder",
-      });
-    }
-  });
 };

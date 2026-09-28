@@ -60,7 +60,7 @@ export default function IdeShell({ projectName }: IdeShellProps) {
     setProjectId(projectIdFromUrl as string);
 
     const editorSocketConn = io(
-      `${API_BASE_URL}/editor?projectId=${projectIdFromUrl}`,
+      `${API_BASE_URL}/editor`,
       {
         query: { projectId: projectIdFromUrl as string },
         transports: ["polling", "websocket"],

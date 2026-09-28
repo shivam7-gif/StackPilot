@@ -40,6 +40,7 @@ interface EditorSocketStore {
 }
 
 const handleReadFileSuccess = (payload: ReadFilePayload) => {
+  console.log("[Editor] readFileSuccess for:", payload.path);
   const { openTab } = useActiveFileTabStore.getState();
   const extension = payload.path.split(".").pop() || "";
 

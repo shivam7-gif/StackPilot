@@ -79,10 +79,11 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
   if (!fileFolderData) return null;
 
   const hasChildren =
-    fileFolderData.children && fileFolderData.children.length > 0;
+    Array.isArray(fileFolderData.children) && fileFolderData.children.length > 0;
   const extension =
     fileFolderData.name.split(".").pop()?.toLowerCase() ?? "file";
-  const isFolder = hasChildren || fileFolderData.type === "directory";
+  const isFolder =
+    Array.isArray(fileFolderData.children) || fileFolderData.type === "directory";
   const resolvedNodePath = fileFolderData.path ?? fileFolderData.name;
   const isSelected = !isFolder && activeTabPath === resolvedNodePath;
   const isReactFile = extension === "tsx" || extension === "jsx";
@@ -123,7 +124,10 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
     } else {
       // Optimistically open tab; socket will fill in value
       openTab(resolvedNodePath, "", extension, "text");
-      editorSocket?.emit("readFile", { pathToFileFolder: resolvedNodePath });
+      if (editorSocket) {
+        console.log("[Editor] Requesting readFile:", resolvedNodePath);
+        editorSocket.emit("readFile", { pathToFileFolder: resolvedNodePath });
+      }
     }
   };
   function handleContextMenu(
