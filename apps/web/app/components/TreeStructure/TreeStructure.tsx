@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useTreeStructureStore } from "../../store/TreeStructureStore";
-import { Tree } from "../Tree/tree";
+import { Tree } from "../tree/Tree";
 import { useFileContextMenuStore } from "@/store/fileContextMenuStore";
 import { FileContextMenu } from "../ContextMenu/FileContentMenu";
 
