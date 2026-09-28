@@ -57,9 +57,10 @@ app.get("/metrics", getMetricsHandler);
 app.use(metricsMiddleware);
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window`
-  message: "Too many requests from this IP, please try again after 15 minutes"
+  windowMs: 15 * 60 * 1000,
+  max: 5000,
+  skip: (req) => Boolean(req.originalUrl && req.originalUrl.includes("socket.io")),
+  message: "Too many requests from this IP, please try again after 15 minutes",
 });
 app.use(limiter);
 
@@ -161,27 +162,8 @@ terminalNamespace.on("connection", async (socket) => {
     return;
   }
 
-  try {
-    const containerInfo = await handleContainerCreate(projectId);
-
-    console.log(
-      `Terminal connected : ${socket.id} ${projectId}, container ${containerInfo.containerId}`
-    );
-
-    socket.emit("container:ready", {
-      containerId: containerInfo.containerId,
-      hostPort5173: containerInfo.hostPort5173,
-    });
-
-    // IMPORTANT
-    handleTerminalSocket(socket, projectId, terminalNamespace);
-  } catch (error) {
-    console.error("Failed to create container", error);
-
-    socket.emit("error", {
-      data: "Failed to start sandbox container",
-    });
-  }
+  console.log(`Terminal connected : ${socket.id} for project ${projectId}`);
+  handleTerminalSocket(socket, projectId, terminalNamespace);
 
   socket.on("disconnect", () => {
     socketIoConnections.dec({ namespace: "/terminal" });

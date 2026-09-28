@@ -123,6 +123,14 @@ const TerminalInstance = memo(
         onConnectedChange(false);
       });
 
+      socket.on("connect_error", (err) => {
+        term.write(`\r\n\x1b[31m[Connection error: ${err.message}]\x1b[0m\r\n`);
+      });
+
+      socket.on("error", (err: any) => {
+        term.write(`\r\n\x1b[31m[Error: ${err?.data || err?.message || JSON.stringify(err)}]\x1b[0m\r\n`);
+      });
+
       socket.on("shell-output", (data: string) => {
         term.write(data);
       });
