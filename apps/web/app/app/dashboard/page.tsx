@@ -273,6 +273,10 @@ export default function DashboardPage() {
   useEffect(() => {
     socket.connect();
     socket.on("connect", () => console.log("connected:", socket.id));
+    socket.on("connect_error", (err) => {
+      console.error("Socket connect error:", err);
+      setLogs((p) => [...p, `[Connection issue] ${err.message}`]);
+    });
     socket.on("project-log", (log) => setLogs((p) => [...p, String(log)]));
     socket.on("project-step", (step: string) => {
       if (step === "folders") setoverlayStep("creating");

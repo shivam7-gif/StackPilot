@@ -1,5 +1,7 @@
 "use client";
 
+import { API_BASE_URL } from "@/config/socket";
+
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import axios from "axios";
@@ -21,7 +23,7 @@ export default function Ide() {
       if (!id) return;
       try {
         const res = await axios.get(
-          `http://localhost:5000/projects/${id}/meta`,
+          `${API_BASE_URL}/projects/${id}/meta`,
         );
         setProjectName(res.data.projectName ?? "");
       } catch (err) {

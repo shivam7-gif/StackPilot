@@ -1,5 +1,7 @@
 "use client";
 
+import { API_BASE_URL } from "@/config/socket";
+
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
@@ -106,7 +108,8 @@ const TerminalInstance = memo(
       fitAddonRef.current = fitAddon;
 
       // The backend treats each socket connection to this namespace as a new shell session!
-      const socket = io("http://localhost:5000/terminal", {
+      const socket = io(`${API_BASE_URL}/terminal`, {
+        transports: ["polling", "websocket"],
         query: { projectId, terminalId },
       });
       socketRef.current = socket;

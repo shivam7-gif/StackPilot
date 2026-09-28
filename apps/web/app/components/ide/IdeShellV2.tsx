@@ -1,5 +1,7 @@
 "use client";
 
+import { API_BASE_URL } from "@/config/socket";
+
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useEditorSocketStore } from "../../store/EditorSocketStores";
@@ -41,7 +43,7 @@ export default function IdeShellV2({ projectName }: IdeShellV2Props) {
     setProjectId(projectIdFromUrl as string);
 
     const editorSocketConn = io(
-      `http://localhost:5000/editor?projectId=${projectIdFromUrl}`,
+      `${API_BASE_URL}/editor?projectId=${projectIdFromUrl}`,
       { query: { projectId: projectIdFromUrl as string } }
     );
 

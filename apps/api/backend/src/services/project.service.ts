@@ -27,9 +27,9 @@ export const getScaffoldCommand = (
   const cwd = PROJECTS_DIR;
   const commands: Record<Framework, string> = {
     // Named scaffold (CLI creates the folder)
-    react: `npm create vite@latest ${projectId} -- --template react-ts`,
-    vue: `npm create vite@latest ${projectId} -- --template vue-ts`,
-    svelte: `npm create vite@latest ${projectId} -- --template svelte-ts`,
+    react: `npm create -y vite@latest ${projectId} -- --template react-ts`,
+    vue: `npm create -y vite@latest ${projectId} -- --template vue-ts`,
+    svelte: `npm create -y vite@latest ${projectId} -- --template svelte-ts`,
     nextjs: `npx create-next-app@latest ${projectId} --typescript --eslint --no-tailwind --src-dir --app --yes --skip-install`,
     angular: `npx @angular/cli@latest new ${projectId} --routing --style=scss --skip-git --skip-install`,
     nestjs: `npx @nestjs/cli@latest new ${projectId} --package-manager npm --skip-git --skip-install`,
@@ -39,7 +39,7 @@ export const getScaffoldCommand = (
 
     // Dot scaffold (scaffold INTO current dir)
     astro: `npx create-astro@latest . --template minimal --no-install --no-git --yes`,
-    express: `npx express-generator --no-view --force ${projectId}`,
+    express: `npx -y express-generator --no-view --force ${projectId}`,
     django: `django-admin startproject app .`,
   };
 

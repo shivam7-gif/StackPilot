@@ -1,5 +1,7 @@
 "use client";
 
+import { API_BASE_URL } from "@/config/socket";
+
 import { useEffect } from "react";
 import { io } from "socket.io-client";
 import { usePanelResize } from "../../hooks/usePanelResize";
@@ -58,9 +60,10 @@ export default function IdeShell({ projectName }: IdeShellProps) {
     setProjectId(projectIdFromUrl as string);
 
     const editorSocketConn = io(
-      `http://localhost:5000/editor?projectId=${projectIdFromUrl}`,
+      `${API_BASE_URL}/editor?projectId=${projectIdFromUrl}`,
       {
         query: { projectId: projectIdFromUrl as string },
+        transports: ["polling", "websocket"],
       }
     );
 
