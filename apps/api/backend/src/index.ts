@@ -101,6 +101,29 @@ app.get("/", (_req, res) => {
   res.status(200).json({ status: "ok", message: "StackPilot API is running" });
 });
 
+const devProxyPool = new Map<number, any>();
+
+function getDevProxyMiddleware(port: number) {
+  let proxy = devProxyPool.get(port);
+  if (!proxy) {
+    proxy = createProxyMiddleware({
+      target: `http://127.0.0.1:${port}`,
+      changeOrigin: true,
+      ws: true,
+      xfwd: true,
+      on: {
+        proxyRes: (proxyRes) => {
+          delete proxyRes.headers["x-frame-options"];
+          delete proxyRes.headers["content-security-policy"];
+          proxyRes.headers["access-control-allow-origin"] = "*";
+        },
+      },
+    });
+    devProxyPool.set(port, proxy);
+  }
+  return proxy;
+}
+
 // Proxy root-relative dev server requests (Vite assets, HMR, React components) originating from preview iframes
 app.use((req, res, next) => {
   // Never intercept standard backend API endpoints
@@ -146,18 +169,7 @@ app.use((req, res, next) => {
   // If a preview session is active, proxy this asset request to the project's dev server
   if (projectId) {
     const port = getProjectPort(projectId);
-    return createProxyMiddleware({
-      target: `http://127.0.0.1:${port}`,
-      changeOrigin: true,
-      ws: true,
-      on: {
-        proxyRes: (proxyRes) => {
-          delete proxyRes.headers["x-frame-options"];
-          delete proxyRes.headers["content-security-policy"];
-          proxyRes.headers["access-control-allow-origin"] = "*";
-        },
-      },
-    })(req, res, next);
+    return getDevProxyMiddleware(port)(req, res, next);
   }
 
   next();
@@ -242,6 +254,39 @@ terminalNamespace.on("connection", async (socket) => {
   socket.on("disconnect", () => {
     socketIoConnections.dec({ namespace: "/terminal" });
   });
+});
+
+server.on("upgrade", (req, socket, head) => {
+  if (req.url?.startsWith("/socket.io")) {
+    return;
+  }
+
+  let projectId: string | null | undefined = null;
+  const cookieHeader = req.headers.cookie;
+  if (cookieHeader) {
+    const match = cookieHeader.match(/stackpilot_preview_project=([a-zA-Z0-9_-]+)/);
+    if (match?.[1]) projectId = match[1];
+  }
+  if (!projectId && req.headers.referer) {
+    const match = req.headers.referer.match(/\/preview\/([a-zA-Z0-9_-]+)/);
+    if (match?.[1]) projectId = match[1];
+  }
+  if (!projectId) {
+    const forwarded = req.headers["x-forwarded-for"];
+    const clientKey =
+      (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() ||
+      req.socket.remoteAddress ||
+      "default";
+    projectId = getActiveProjectForClient(clientKey);
+  }
+
+  if (projectId) {
+    const port = getProjectPort(projectId);
+    const proxy = getDevProxyMiddleware(port);
+    if (proxy && typeof proxy.upgrade === "function") {
+      proxy.upgrade(req, socket, head);
+    }
+  }
 });
 
 server.listen(Number(PORT), "0.0.0.0", () => {
