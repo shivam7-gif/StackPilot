@@ -34,6 +34,7 @@ echo "└─ Preview : ${previewUrl ?? "Not Running"}"
 echo ""
 
 unset PORT
+unset NODE_ENV
 export TERM=xterm-256color
 
 alias ll='ls -lah --color=auto'
@@ -64,9 +65,10 @@ async function attachLocalShell(
     previewUrl,
   });
 
-  // Never leak host service PORT (e.g. 10000 on Render) into project dev terminals
+  // Never leak host service PORT (10000) or NODE_ENV=production into project dev terminals
   const childEnv = { ...process.env, TERM: "xterm-256color" } as Record<string, string>;
   delete childEnv.PORT;
+  delete childEnv.NODE_ENV;
 
   ptyProcess = spawn(shell, [], {
     name: "xterm-color",

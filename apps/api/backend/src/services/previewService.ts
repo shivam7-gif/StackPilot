@@ -21,6 +21,21 @@ export function getProjectPort(projectId: string): number {
 }
 
 /**
+ * Map of client IP to active project ID
+ */
+const clientActiveProjects = new Map<string, string>();
+let lastActiveProjectId: string | null = null;
+
+export function recordClientPreviewAccess(clientKey: string, projectId: string): void {
+  clientActiveProjects.set(clientKey, projectId);
+  lastActiveProjectId = projectId;
+}
+
+export function getActiveProjectForClient(clientKey: string): string | null {
+  return clientActiveProjects.get(clientKey) || lastActiveProjectId;
+}
+
+/**
  * Generate the public live preview URL for a project.
  */
 export function getProjectPreviewUrl(projectId: string, req?: Request): string {

@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createProxyMiddleware } from "http-proxy-middleware";
-import { getProjectPort } from "../services/previewService.js";
+import { getProjectPort, recordClientPreviewAccess } from "../services/previewService.js";
 import { PROJECTS_DIR } from "../services/project.service.js";
 
 const router = express.Router();
@@ -131,6 +131,19 @@ router.use("/:projectId", (req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Security-Policy", "frame-ancestors *");
 
+  const forwarded = req.headers["x-forwarded-for"];
+  const clientKey =
+    (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() ||
+    req.socket.remoteAddress ||
+    "default";
+  recordClientPreviewAccess(clientKey, projectId);
+
+  // Set partitioned cross-site cookie so root-relative assets resolve directly to this project
+  res.setHeader(
+    "Set-Cookie",
+    `stackpilot_preview_project=${projectId}; Path=/; SameSite=None; Secure; Partitioned; Max-Age=86400`
+  );
+
   // If path doesn't end with slash on root, redirect so relative assets resolve properly
   if (req.path === "" || req.path === "/") {
     if (!req.originalUrl.endsWith("/")) {
@@ -175,8 +188,8 @@ router.use("/:projectId", (req, res, next) => {
         if (!res.headersSent) {
           const runCmd =
             frontendDir !== projectDir
-              ? `cd ${path.basename(frontendDir)} && npm run dev`
-              : "npm run dev";
+              ? `cd ${path.basename(frontendDir)} && npm install && npm run dev`
+              : "npm install && npm run dev";
 
           const html = renderStatusPage(
             "Dev Server Offline",
