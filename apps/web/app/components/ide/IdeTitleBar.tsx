@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useThemeStore } from "../../store/useThemeStore";
 import { ActivePreviewStore } from "../../store/activePreviewStore";
+import { useTreeStructureStore } from "../../store/TreeStructureStore";
+import { API_BASE_URL } from "@/config/socket";
 
 interface IdeTitleBarProps {
   projectName?: string;
@@ -13,7 +15,8 @@ const MENU_ITEMS = ["File", "Edit", "View", "Terminal", "Help"];
 export default function IdeTitleBar({ projectName }: IdeTitleBarProps) {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const { theme, toggleTheme } = useThemeStore();
-  const { activeView, openPreview, openEditor } = ActivePreviewStore();
+  const { activeView, previewUrl, openPreview, openEditor } = ActivePreviewStore();
+  const { projectId } = useTreeStructureStore();
 
   return (
     <header
@@ -167,7 +170,12 @@ export default function IdeTitleBar({ projectName }: IdeTitleBarProps) {
             if (activeView === "preview") {
               openEditor();
             } else {
-              openPreview("http://localhost:5173");
+              const url =
+                previewUrl ||
+                (projectId
+                  ? `${API_BASE_URL}/api/preview/${projectId}/`
+                  : `${API_BASE_URL}/api/preview/default/`);
+              openPreview(url);
             }
           }}
           onMouseEnter={(e) => {

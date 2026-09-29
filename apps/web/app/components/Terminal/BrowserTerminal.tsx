@@ -1,6 +1,7 @@
 "use client";
 
 import { API_BASE_URL } from "@/config/socket";
+import { ActivePreviewStore } from "@/store/activePreviewStore";
 
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -135,6 +136,24 @@ const TerminalInstance = memo(
 
       socket.on("shell-output", (data: string) => {
         term.write(data);
+      });
+
+      socket.on("container-ready", ({ previewUrl }: { previewUrl?: string }) => {
+        if (previewUrl) {
+          ActivePreviewStore.setState({ previewUrl });
+        }
+      });
+
+      socket.on("preview-ready", ({ previewUrl }: { previewUrl?: string }) => {
+        if (previewUrl) {
+          ActivePreviewStore.getState().openPreview(previewUrl);
+        }
+      });
+
+      socket.on("preview-url", ({ previewUrl }: { previewUrl?: string }) => {
+        if (previewUrl) {
+          ActivePreviewStore.setState({ previewUrl });
+        }
       });
 
       term.onData((data) => {

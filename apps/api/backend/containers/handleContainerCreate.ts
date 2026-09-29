@@ -63,7 +63,7 @@ async function createContainer(
 ): Promise<ProjectContainer> {
   const name = containerNameForProject(projectId);
 
-  const container = await docker.createContainer({
+  const container = (await docker.createContainer({
     name,
 
     Image: SANDBOX_IMAGE,
@@ -98,13 +98,13 @@ async function createContainer(
       },
       // Restrict sandbox resources to prevent DOS
       Memory: 512 * 1024 * 1024, // 512MB RAM limit
-      NanoCPUs: 1 * 10e8, // 1 CPU core limit
+      NanoCpus: 1 * 10e8, // 1 CPU core limit
     },
 
     Labels: {
       "stackpilot.projectId": projectId,
     },
-  });
+  })) as unknown as Docker.Container;
 
   console.log(`Container created for ${projectId}: ${container.id}`);
 

@@ -1,6 +1,5 @@
-import fs from "fs/promises";
-export const handleProjectSteps = (socket : any)=>{
-  socket.on("project-logs",({projectId})=>{
-    socket.emit("project-step","folders")
-  })
-}
+export const handleProjectSteps = (socket: any) => {
+  socket.on("project-logs", ({ projectId }: { projectId: string }) => {
+    socket.emit("project-step", "folders");
+  });
+};

@@ -1,0 +1,102 @@
+.root {
+  --p: 0; /* progress 0–100, updated dynamically via requestAnimationFrame */
+  --bg-light: #ffffff;
+  --bg-dark: #000000;
+  --ink: #111111;
+  --ink-soft: #8e8e8e;
+  --counter: #e0e0e0;
+
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  overflow: hidden;
+  background: var(--bg-light);
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: all;
+  user-select: none;
+}
+
+.exit {
+  opacity: 0;
+  transform: scale(1.015);
+  pointer-events: none;
+}
+
+/* Light layer with the centered text (sits under the black curtain) */
+.stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--bg-light);
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(1rem, 1.6vw, 1.4rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.title strong {
+  font-weight: 700;
+}
+
+.title span {
+  font-weight: 300;
+  color: var(--ink-soft);
+}
+
+/* Black curtain: its left edge moves right as progress increases */
+.curtain {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-dark);
+  clip-path: inset(0 0 0 calc(var(--p) * 1%));
+  will-change: clip-path;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Counter pinned to the right edge */
+.counter {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transform: translateY(-50%);
+  padding-right: 32px;
+  pointer-events: none;
+}
+
+.label {
+  min-width: 4ch;
+  text-align: right;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: 0.05em;
+  color: var(--counter);
+  font-weight: 400;
+}
+
+.line {
+  display: block;
+  width: clamp(45px, 6vw, 85px);
+  height: 1px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    transition-duration: 0.01s;
+  }
+}

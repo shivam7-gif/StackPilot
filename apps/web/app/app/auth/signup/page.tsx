@@ -1,13 +1,18 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePageTransition, TransitionLink } from "@/components/Loadingscreen/PageTransitionContext";
 
 export default function SignupPage() {
-    const router = useRouter();
+    const { transitionTo } = usePageTransition();
 
-    function handleLogin(){
-        router.push("/auth/login")
+    function handleLogin(e?: React.MouseEvent){
+        e?.preventDefault();
+        transitionTo("/auth/login", "StackPilot");
+    }
+
+    function handleSubmit(e: React.FormEvent){
+        e.preventDefault();
+        transitionTo("/dashboard", "StackPilot");
     }
     
     return (
@@ -43,7 +48,7 @@ export default function SignupPage() {
                     <div className="h-px flex-1 bg-black/10" />
                 </div>
 
-                <form className="flex flex-col gap-4">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <input
                         type="email"
                         placeholder="Email address"
@@ -62,11 +67,11 @@ export default function SignupPage() {
                     </button>
                 </form>
 
-                <p className="text-center text-sm text-ink/50" onClick={handleLogin}>
+                <p className="text-center text-sm text-ink/50">
                     Already have an account?{" "}
-                    <Link href="/auth/login" className="text-ink underline underline-offset-4">
+                    <TransitionLink href="/auth/login" text="StackPilot" className="text-ink underline underline-offset-4">
                         Log in
-                    </Link>
+                    </TransitionLink>
                 </p>
             </div>
         </main>

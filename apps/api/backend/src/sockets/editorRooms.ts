@@ -1,4 +1,4 @@
-import chokidar from "chokidar";
+import chokidar, { type FSWatcher } from "chokidar";
 import type { Namespace } from "socket.io";
 import path from "path";
 import { PROJECTS_DIR } from "../services/project.service.js";
@@ -8,7 +8,7 @@ export function getProjectRoomId(projectId: string): string {
 }
 
 type WatcherEntry = {
-  watcher: chokidar.FSWatcher;
+  watcher: FSWatcher;
   refCount: number;
 };
 

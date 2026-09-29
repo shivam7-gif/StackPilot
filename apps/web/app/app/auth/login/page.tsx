@@ -1,14 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePageTransition, TransitionLink } from "@/components/Loadingscreen/PageTransitionContext";
 
 export default function LoginPage() {
-    const router = useRouter();
+    const { transitionTo } = usePageTransition();
 
-    function handleSubmit() {
-        router.push("/auth/signup");
+    function handleSubmit(e?: React.FormEvent) {
+        e?.preventDefault();
+        transitionTo("/dashboard", "StackPilot");
     }
+
     return (
         <main className="grid min-h-screen w-full bg-white md:grid-cols-2">
             {/* Left: blank media panel */}
@@ -42,7 +43,7 @@ export default function LoginPage() {
                     <div className="h-px flex-1 bg-black/10" />
                 </div>
 
-                <form className="flex flex-col gap-4">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <input
                         type="email"
                         placeholder="Email address"
@@ -63,9 +64,9 @@ export default function LoginPage() {
 
                 <p className="text-center text-sm text-ink/50">
                     Don&apos;t have an account?{" "}
-                    <Link href="/auth/signup" className="text-ink underline underline-offset-4">
+                    <TransitionLink href="/auth/signup" text="StackPilot" className="text-ink underline underline-offset-4">
                         Sign up
-                    </Link>
+                    </TransitionLink>
                 </p>
             </div>
         </main>

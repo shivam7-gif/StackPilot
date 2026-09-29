@@ -89,6 +89,37 @@ app.get("/", (_req, res) => {
   res.status(200).json({ status: "ok", message: "StackPilot API is running" });
 });
 
+// Intercept root-relative Vite dev server requests originating from preview iframes
+app.use((req, res, next) => {
+  const referer = req.headers.referer;
+  if (!referer) return next();
+
+  const isViteInternal =
+    req.path.startsWith("/@") ||
+    req.path.startsWith("/src/") ||
+    req.path.startsWith("/node_modules/");
+
+  if (isViteInternal) {
+    const match = referer.match(/\/preview\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      const projectId = match[1];
+      import("./services/previewService.js").then(({ getProjectPort }) => {
+        const port = getProjectPort(projectId);
+        import("http-proxy-middleware").then(({ createProxyMiddleware }) => {
+          createProxyMiddleware({
+            target: `http://127.0.0.1:${port}`,
+            changeOrigin: true,
+            ws: true,
+          })(req, res, next);
+        });
+      });
+      return;
+    }
+  }
+
+  next();
+});
+
 app.use("/", routes);
 
 io.on("connection", (socket) => {

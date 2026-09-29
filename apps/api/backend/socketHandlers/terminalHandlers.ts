@@ -7,6 +7,7 @@ import type { Namespace, Socket } from "socket.io";
 import { ensureProjectContainer } from "../containers/handleContainerCreate.js";
 import { resolveProjectHostPath } from "../containers/resolveProjectHostPath.js";
 import { PROJECTS_DIR } from "../src/services/project.service.js";
+import { setProjectPort, getProjectPreviewUrl } from "../src/services/previewService.js";
 
 function getDefaultShell(): string {
   if (process.platform === "win32") {
@@ -50,6 +51,17 @@ async function attachLocalShell(
 
   const cwd = await resolveProjectHostPath(projectId);
   const shell = getDefaultShell();
+  const previewUrl = getProjectPreviewUrl(projectId);
+
+  // Emit preview URL so the IDE preview tab is immediately ready
+  socket.emit("container-ready", {
+    projectId,
+    previewUrl,
+  });
+  socket.emit("preview-url", {
+    projectId,
+    previewUrl,
+  });
 
   ptyProcess = spawn(shell, [], {
     name: "xterm-color",
@@ -61,6 +73,18 @@ async function attachLocalShell(
 
   ptyProcess.onData((data) => {
     socket.emit("shell-output", data);
+
+    // Auto-detect dev server port from terminal logs (e.g. Vite: http://localhost:5173/)
+    const portMatch = data.match(/(?:localhost|127\.0\.0\.1|0\.0\.0\.0):(\d{4,5})/);
+    if (portMatch && portMatch[1]) {
+      const detectedPort = parseInt(portMatch[1], 10);
+      setProjectPort(projectId, detectedPort);
+      socket.emit("preview-ready", {
+        projectId,
+        port: detectedPort,
+        previewUrl,
+      });
+    }
   });
 
   ptyProcess.onExit(() => {
@@ -69,7 +93,7 @@ async function attachLocalShell(
 
   console.log(`Local terminal spawned for ${projectId} in ${cwd}`);
 
-  const banner = createTerminalBanner(projectId, projectId.slice(0, 8), cwd);
+  const banner = createTerminalBanner(projectId, projectId.slice(0, 8), cwd, previewUrl);
   socket.emit("shell-output", banner.replace(/\n/g, "\r\n"));
 
   const onInput = (data: string) => {
@@ -101,12 +125,18 @@ async function attachDockerShell(
   projectId: string
 ): Promise<() => void> {
   const { container, hostPort5173 } = await ensureProjectContainer(projectId);
+  const previewUrl = getProjectPreviewUrl(projectId);
 
   if (hostPort5173) {
     socket.emit("container-ready", {
       projectId,
       hostPort5173,
-      previewUrl: `http://localhost:${hostPort5173}`,
+      previewUrl,
+    });
+    socket.emit("preview-ready", {
+      projectId,
+      port: 5173,
+      previewUrl,
     });
   }
 

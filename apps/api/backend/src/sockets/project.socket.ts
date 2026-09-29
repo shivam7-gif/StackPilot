@@ -122,6 +122,8 @@ const runEngineWithSocket = async (
     projectName,
     baseName: projectName,
     folderName: projectId,
+    frontend: undefined,
+    backend: undefined,
     createdAt: new Date().toISOString(),
   });
 
