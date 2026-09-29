@@ -85,6 +85,41 @@ function renderStatusPage(
 }
 
 /**
+ * Find where the frontend root directory is located.
+ * In StackPilot, multi-service projects often have <name>-frontend (or frontend/) subdirectories.
+ */
+function findFrontendDir(projectDir: string): string {
+  try {
+    if (!fs.existsSync(projectDir)) return projectDir;
+    // Direct index.html or dist
+    if (
+      fs.existsSync(path.join(projectDir, "index.html")) ||
+      fs.existsSync(path.join(projectDir, "dist"))
+    ) {
+      return projectDir;
+    }
+    const entries = fs.readdirSync(projectDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const subDir = path.join(projectDir, entry.name);
+        if (
+          fs.existsSync(path.join(subDir, "index.html")) ||
+          fs.existsSync(path.join(subDir, "dist")) ||
+          entry.name.toLowerCase().includes("frontend") ||
+          entry.name.toLowerCase().includes("client") ||
+          entry.name.toLowerCase().includes("web")
+        ) {
+          return subDir;
+        }
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return projectDir;
+}
+
+/**
  * Primary Preview Handler for a given project ID
  */
 router.use("/:projectId", (req, res, next) => {
@@ -124,28 +159,45 @@ router.use("/:projectId", (req, res, next) => {
       },
       error: (_err: any, _req: any, res: any) => {
         // Dev server connection refused. Check for static build files first
-        const distDir = path.join(projectDir, "dist");
-        const indexPath = path.join(projectDir, "index.html");
+        const frontendDir = findFrontendDir(projectDir);
+        const distDir = path.join(frontendDir, "dist");
+        const indexPath = path.join(frontendDir, "index.html");
 
         if (fs.existsSync(distDir)) {
           return express.static(distDir)(req, res, next);
         }
 
         if (fs.existsSync(indexPath)) {
-          return express.static(projectDir)(req, res, next);
+          return express.static(frontendDir)(req, res, next);
         }
 
         // No running dev server and no static files found
-        if (!res.headersSent && typeof res.status === "function") {
-          res.setHeader("Content-Type", "text/html");
-          res.setHeader("Content-Security-Policy", "frame-ancestors *");
-          res.status(200).send(
-            renderStatusPage(
-              "Dev Server Offline",
-              "The development server is not running yet. Run the start command in your IDE terminal to launch the live app.",
-              "npm run dev"
-            )
+        if (!res.headersSent) {
+          const runCmd =
+            frontendDir !== projectDir
+              ? `cd ${path.basename(frontendDir)} && npm run dev`
+              : "npm run dev";
+
+          const html = renderStatusPage(
+            "Dev Server Offline",
+            "The development server is not running yet. Run the start command in your IDE terminal to launch the live app.",
+            runCmd
           );
+
+          try {
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            res.setHeader("Content-Security-Policy", "frame-ancestors *");
+            res.setHeader("Access-Control-Allow-Origin", "*");
+
+            if (typeof res.status === "function") {
+              res.status(200).send(html);
+            } else if (typeof res.writeHead === "function") {
+              res.writeHead(200);
+              res.end(html);
+            }
+          } catch {
+            // ignore response race
+          }
         }
       },
     },

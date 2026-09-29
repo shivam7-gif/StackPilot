@@ -33,6 +33,7 @@ echo "├─ Path    : ${cwd}"
 echo "└─ Preview : ${previewUrl ?? "Not Running"}"
 echo ""
 
+unset PORT
 export TERM=xterm-256color
 
 alias ll='ls -lah --color=auto'
@@ -63,27 +64,36 @@ async function attachLocalShell(
     previewUrl,
   });
 
+  // Never leak host service PORT (e.g. 10000 on Render) into project dev terminals
+  const childEnv = { ...process.env, TERM: "xterm-256color" } as Record<string, string>;
+  delete childEnv.PORT;
+
   ptyProcess = spawn(shell, [], {
     name: "xterm-color",
     cols: 80,
     rows: 24,
     cwd,
-    env: { ...process.env, TERM: "xterm-256color" } as Record<string, string>,
+    env: childEnv,
   });
+
+  const hostPort = Number(process.env.PORT || 10000);
 
   ptyProcess.onData((data) => {
     socket.emit("shell-output", data);
 
-    // Auto-detect dev server port from terminal logs (e.g. Vite: http://localhost:5173/)
-    const portMatch = data.match(/(?:localhost|127\.0\.0\.1|0\.0\.0\.0):(\d{4,5})/);
+    // Auto-detect dev server port from terminal logs (e.g. Vite: "Local: http://localhost:5173/")
+    // Ignore error messages (such as EADDRINUSE) and never bind to host's own backend API port
+    const portMatch = data.match(/(?:http:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0):|(?:Local|Network):\s+http:\/\/[^:]+:)(\d{4,5})/i);
     if (portMatch && portMatch[1]) {
       const detectedPort = parseInt(portMatch[1], 10);
-      setProjectPort(projectId, detectedPort);
-      socket.emit("preview-ready", {
-        projectId,
-        port: detectedPort,
-        previewUrl,
-      });
+      if (detectedPort !== hostPort && detectedPort !== 5000 && detectedPort !== 80) {
+        setProjectPort(projectId, detectedPort);
+        socket.emit("preview-ready", {
+          projectId,
+          port: detectedPort,
+          previewUrl,
+        });
+      }
     }
   });
 
