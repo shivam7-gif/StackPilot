@@ -47,7 +47,14 @@ const io = new Server(server, {
   },
 });
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    frameguard: false,
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
 app.use(cors());
 
 // Prometheus scrape endpoint (exempt from rate limits)

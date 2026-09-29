@@ -91,6 +91,11 @@ router.use("/:projectId", (req, res, next) => {
   const { projectId } = req.params;
   const projectDir = path.join(PROJECTS_DIR, projectId);
 
+  // Ensure iframe embedding is permitted across origins
+  res.removeHeader("X-Frame-Options");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Content-Security-Policy", "frame-ancestors *");
+
   // If path doesn't end with slash on root, redirect so relative assets resolve properly
   if (req.path === "" || req.path === "/") {
     if (!req.originalUrl.endsWith("/")) {
@@ -111,6 +116,12 @@ router.use("/:projectId", (req, res, next) => {
       return rewritten;
     },
     on: {
+      proxyRes: (proxyRes) => {
+        // Strip headers that prevent iframe embedding from proxied dev server
+        delete proxyRes.headers["x-frame-options"];
+        delete proxyRes.headers["content-security-policy"];
+        proxyRes.headers["access-control-allow-origin"] = "*";
+      },
       error: (_err: any, _req: any, res: any) => {
         // Dev server connection refused. Check for static build files first
         const distDir = path.join(projectDir, "dist");
@@ -126,7 +137,9 @@ router.use("/:projectId", (req, res, next) => {
 
         // No running dev server and no static files found
         if (!res.headersSent && typeof res.status === "function") {
-          res.status(503).send(
+          res.setHeader("Content-Type", "text/html");
+          res.setHeader("Content-Security-Policy", "frame-ancestors *");
+          res.status(200).send(
             renderStatusPage(
               "Dev Server Offline",
               "The development server is not running yet. Run the start command in your IDE terminal to launch the live app.",
