@@ -5,170 +5,6 @@ import { socket } from "@/config/socket";
 import { useRouter } from "next/navigation";
 
 type OverlayStep = "idle" | "creating" | "logs" | "done";
-type Project = {
-  id: string;
-  name: string;
-  frontend: string;
-  backend: string;
-  recent: string[];
-};
-
-const SAVED_PROMPTS = [
-  {
-    bg: "#e8f5e9",
-    iconBg: "#4caf50",
-    title: "New Project",
-    bold: "New",
-    desc: "Scaffold a full-stack app with your chosen tech stack.",
-  },
-  {
-    bg: "#fff8e1",
-    iconBg: "#e59400",
-    title: "Creative Deploy",
-    bold: "Creative",
-    desc: "Ship your project and get a live preview instantly.",
-  },
-  {
-    bg: "#e3f2fd",
-    iconBg: "#2196f3",
-    title: "Debug Code",
-    bold: "Debug",
-    desc: "Ask Karma to find and fix bugs in your codebase.",
-  },
-];
-
-const NAV_ITEMS = [
-  {
-    label: "New Chat",
-    icon: (
-      <svg
-        width="15"
-        height="15"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      >
-        <path d="M12 5v14M5 12h14" />
-      </svg>
-    ),
-  },
-  {
-    label: "Adaptive Chat",
-    icon: (
-      <svg
-        width="15"
-        height="15"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      >
-        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-      </svg>
-    ),
-  },
-  {
-    label: "System Analysis",
-    icon: (
-      <svg
-        width="15"
-        height="15"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      >
-        <circle cx="11" cy="11" r="7" />
-        <path d="M20 20l-3-3" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    label: "Data Flow",
-    icon: (
-      <svg
-        width="15"
-        height="15"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      >
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
-    ),
-  },
-];
-
-const MOCK_PROJECTS: Project[] = [
-  {
-    id: "p1",
-    name: "Energy Optimization",
-    frontend: "react",
-    backend: "express",
-    recent: [
-      "From data usage to model..",
-      "Signals filtered before fu..",
-      "Every layer is designed to..",
-      "Without increasing enviro..",
-    ],
-  },
-  {
-    id: "p2",
-    name: "Climate Model",
-    frontend: "next",
-    backend: "fastapi",
-    recent: [],
-  },
-  {
-    id: "p3",
-    name: "Resource Mapping",
-    frontend: "vue",
-    backend: "django",
-    recent: [],
-  },
-];
-
-const PROJ_ICONS = [
-  <svg
-    key="p1"
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-  >
-    <circle cx="12" cy="12" r="3" />
-    <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
-  </svg>,
-  <svg
-    key="p2"
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <line x1="2" y1="12" x2="22" y2="12" />
-    <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10A15.3 15.3 0 0112 2z" />
-  </svg>,
-  <svg
-    key="p3"
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-  >
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-    <circle cx="12" cy="10" r="3" />
-  </svg>,
-];
 
 function Spinner() {
   return (
@@ -192,11 +28,11 @@ function LogLine({ text, i }: { text: string; i: number }) {
       className="text-[12px] font-mono py-0.5"
       style={{
         color: text.startsWith("✓")
-          ? "#4ade80"
+          ? "#16a34a"
           : text.startsWith("✗")
-            ? "#f87171"
-            : "#a3a3a3",
-        animationDelay: `${i * 40}ms`,
+            ? "#dc2626"
+            : "#525252",
+        animationDelay: `${i * 30}ms`,
       }}
     >
       {text}
@@ -204,72 +40,78 @@ function LogLine({ text, i }: { text: string; i: number }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════
-   PROMPT CARD ICON SVGs
-═══════════════════════════════════════════════════ */
-const PROMPT_ICONS = [
-  <svg
-    key="1"
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="white"
-    strokeWidth="1.8"
-  >
-    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <line x1="12" y1="18" x2="12" y2="12" />
-    <line x1="9" y1="15" x2="15" y2="15" />
-  </svg>,
-  <svg
-    key="2"
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="white"
-    strokeWidth="1.8"
-  >
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>,
-  <svg
-    key="3"
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="white"
-    strokeWidth="1.8"
-  >
-    <circle cx="11" cy="11" r="7" />
-    <path d="M20 20l-3-3" strokeLinecap="round" />
-  </svg>,
+const NAV_ITEMS = [
+  {
+    label: "Chat",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Projects",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      </svg>
+    ),
+  },
+  {
+    label: "Settings",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+      </svg>
+    ),
+  },
 ];
 
 export default function DashboardPage() {
-  /* ── original state (untouched) ── */
   const [frontendFramework, setFrontendFramework] = useState("");
   const [backendFramework, setBackendFramework] = useState("");
   const [projectName, setProjectName] = useState("");
   const [logs, setLogs] = useState<string[]>([]);
-  const [overlayStep, setoverlayStep] = useState<OverlayStep>("idle");
+  const [overlayStep, setOverlayStep] = useState<OverlayStep>("idle");
   const router = useRouter();
 
-  /* ── UI state ── */
+  const [userName, setUserName] = useState<string>("Shiva");
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<
     { role: "user" | "ai"; text: string }[]
   >([]);
   const [aiTyping, setAiTyping] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [activeNav, setActiveNav] = useState("Adaptive Chat");
-  const [expandedProj, setExpandedProj] = useState<string | null>("p1");
+  const [activeNav, setActiveNav] = useState("Chat");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  /* ── socket (original, untouched) ── */
+  // Fetch session / username
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user?.name) {
+          const first = data.user.name.trim().split(" ")[0];
+          setUserName(first || data.user.name);
+        } else if (data?.user?.email) {
+          setUserName(data.user.email.split("@")[0]);
+        }
+      })
+      .catch(() => {});
+
+    try {
+      const stored = localStorage.getItem("stackpilot_username");
+      if (stored) setUserName(stored);
+    } catch {}
+  }, []);
+
+  // Socket connection
   useEffect(() => {
     socket.connect();
     socket.on("connect", () => console.log("connected:", socket.id));
@@ -279,13 +121,13 @@ export default function DashboardPage() {
     });
     socket.on("project-log", (log) => setLogs((p) => [...p, String(log)]));
     socket.on("project-step", (step: string) => {
-      if (step === "folders") setoverlayStep("creating");
-      if (step === "scaffolding") setoverlayStep("logs");
-      if (step === "done") setoverlayStep("done");
+      if (step === "folders") setOverlayStep("creating");
+      if (step === "scaffolding") setOverlayStep("logs");
+      if (step === "done") setOverlayStep("done");
     });
     socket.on("project-done", ({ projectId }) => {
-      setoverlayStep("done");
-      setTimeout(() => router.push(`/project/${projectId}`));
+      setOverlayStep("done");
+      setTimeout(() => router.push(`/project/${projectId}`), 1000);
     });
     socket.on("engine-output", (payload: unknown) => {
       const text = String(payload ?? "").replace(/\r/g, "");
@@ -306,19 +148,9 @@ export default function DashboardPage() {
     socket.on("engine-status", (status: { status?: string }) => {
       if (status?.status === "complete" || status?.status === "error") {
         setAiTyping(false);
-        setChatMessages((prev) => {
-          const alreadyHasDemoLink = prev.some((msg) => msg.text.includes("/netflix-demo"));
-          if (alreadyHasDemoLink) return prev;
-          return [
-            ...prev,
-            {
-              role: "ai",
-              text: 'Your streaming demo is ready. Open the preview at /netflix-demo',
-            },
-          ];
-        });
       }
     });
+
     return () => {
       socket.off("connect");
       socket.off("project-log");
@@ -328,7 +160,7 @@ export default function DashboardPage() {
       socket.off("engine-status");
       socket.disconnect();
     };
-  }, []);
+  }, [router]);
 
   function handleCreateProject() {
     socket.emit("createProject", {
@@ -336,7 +168,7 @@ export default function DashboardPage() {
       backend: backendFramework,
       projectName,
     });
-    setoverlayStep("creating");
+    setOverlayStep("creating");
     setShowModal(false);
   }
 
@@ -353,7 +185,7 @@ export default function DashboardPage() {
     setAiTyping(true);
     setChatMessages((p) => [
       ...p,
-      { role: "ai", text: "Working with StackPilot engine..." },
+      { role: "ai", text: "Processing your request with StackPilot..." },
     ]);
     socket.emit("engine:run", { prompt: t });
   };
@@ -362,722 +194,204 @@ export default function DashboardPage() {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 130) + "px";
+    el.style.height = Math.min(el.scrollHeight, 180) + "px";
   };
 
   return (
-    <div
-      className="flex h-screen w-screen overflow-hidden font-sans"
-      style={{ background: "#f4f4ef", color: "#1a1a1a" }}
-    >
-      {/* ════════════════════════════════════════
-          SIDEBAR
-      ════════════════════════════════════════ */}
+    <div className="flex h-screen w-screen overflow-hidden bg-white text-black font-sans antialiased">
+      {/* ─── SIDEBAR ─── */}
       <aside
-        className="flex flex-col shrink-0 transition-all duration-300"
+        className="flex flex-col shrink-0 transition-all duration-300 bg-white border-r border-black/10"
         style={{
-          width: sidebarCollapsed ? 0 : 240,
+          width: sidebarCollapsed ? 0 : 250,
           overflow: "hidden",
-          background: "#f9f9f6",
-          borderRight: "1px solid #e6e6e0",
         }}
       >
-        {/* Logo row */}
-        <div className="flex items-center gap-2.5 px-5 pt-5 pb-3 shrink-0">
-          <span
-            className="font-semibold text-[15px] tracking-tight"
-            style={{ color: "#1a1a1a" }}
-          >
-            StackPilot
-          </span>
-        </div>
-
-        {/* Search */}
-        <div className="px-4 pb-3 shrink-0">
-          <div
-            className="flex items-center gap-2 px-3 h-9 rounded-2xl text-[13px]"
-            style={{ background: "#eeeeea", border: "1px solid #e0e0da" }}
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#aaa"
-              strokeWidth="2"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="M20 20l-3-3" strokeLinecap="round" />
-            </svg>
-            <span style={{ color: "#bbb" }}>Search here...</span>
-          </div>
-        </div>
-
-        {/* Scrollable nav */}
-        <div
-          className="flex-1 overflow-y-auto px-4 space-y-4 pb-3"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {/* Navigation */}
-          <div>
-            <p
-              className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2 px-1"
-              style={{ color: "#bbb" }}
-            >
-              Navigation
-            </p>
-            <div className="space-y-0.5">
-              {NAV_ITEMS.map(({ label, icon }) => {
-                const active = activeNav === label;
-                return (
-                  <button
-                    key={label}
-                    onClick={() => setActiveNav(label)}
-                    className="w-full flex items-center gap-2.5 px-3 h-9 rounded-2xl text-[13px] transition-all text-left"
-                    style={{
-                      background: active ? "#cff589" : "transparent",
-                      color: active ? "#1a3a00" : "#555",
-                      fontWeight: active ? 600 : 400,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!active) e.currentTarget.style.background = "#eeeeea";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!active)
-                        e.currentTarget.style.background = "transparent";
-                    }}
-                  >
-                    <span style={{ color: active ? "#1a3a00" : "#999" }}>
-                      {icon}
-                    </span>
-                    {label}
-                  </button>
-                );
-              })}
+        {/* Brand header */}
+        <div className="flex items-center justify-between px-5 pt-6 pb-4 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-black text-white flex items-center justify-center font-bold text-xs tracking-wider">
+              SP
             </div>
+            <span className="font-semibold text-[15px] tracking-tight text-black">
+              StackPilot
+            </span>
           </div>
+        </div>
 
-          {/* Projects */}
-          <div>
-            <p
-              className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2 px-1"
-              style={{ color: "#bbb" }}
-            >
-              Projects
-            </p>
-            <div className="space-y-0.5">
+        {/* Navigation list */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+          {NAV_ITEMS.map(({ label, icon }) => {
+            const active = activeNav === label;
+            return (
               <button
-                onClick={() => setShowModal(true)}
-                className="w-full flex items-center gap-2.5 px-3 h-9 rounded-2xl text-[13px] transition-all text-left"
-                style={{ color: "#555" }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#eeeeea")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
+                key={label}
+                onClick={() => setActiveNav(label)}
+                className={`w-full flex items-center gap-3 px-3.5 h-10 rounded-xl text-[13px] font-medium transition-all text-left ${
+                  active
+                    ? "bg-black text-white"
+                    : "text-neutral-600 hover:bg-neutral-100 hover:text-black"
+                }`}
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#999"
-                  strokeWidth="2"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                New Project
+                <span>{icon}</span>
+                <span>{label}</span>
               </button>
-
-              {MOCK_PROJECTS.map((proj, pi) => {
-                const exp = expandedProj === proj.id;
-                return (
-                  <div key={proj.id}>
-                    <button
-                      onClick={() => setExpandedProj(exp ? null : proj.id)}
-                      className="w-full flex items-center justify-between px-3 h-9 rounded-2xl text-[13px] font-medium transition-all text-left"
-                      style={{ color: "#333" }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.background = "#eeeeea")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = "transparent")
-                      }
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span style={{ color: "#888" }}>{PROJ_ICONS[pi]}</span>
-                        <span className="truncate max-w-30">
-                          {proj.name}
-                        </span>
-                      </div>
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        stroke="#bbb"
-                        strokeWidth="1.5"
-                        style={{
-                          transform: exp ? "rotate(180deg)" : "rotate(0)",
-                          transition: "transform 0.18s",
-                        }}
-                      >
-                        <path d="M4 6l4 4 4-4" />
-                      </svg>
-                    </button>
-
-                    {exp && proj.recent.length > 0 && (
-                      <div className="pl-9 pt-0.5 pb-1">
-                        <p
-                          className="text-[9px] font-bold uppercase tracking-widest mb-1"
-                          style={{ color: "#ccc" }}
-                        >
-                          Recent
-                        </p>
-                        {proj.recent.map((r, i) => (
-                          <button
-                            key={i}
-                            className="w-full text-left text-[12px] py-0.5 truncate transition-colors"
-                            style={{ color: "#999" }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.color = "#1a1a1a")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.color = "#999")
-                            }
-                          >
-                            {r}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Your chat */}
-          <div>
-            <p
-              className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2 px-1"
-              style={{ color: "#bbb" }}
-            >
-              Your chat
-            </p>
-            {["From data usage to model..", "Signals filtered before fu.."].map(
-              (item, i) => (
-                <button
-                  key={i}
-                  className="w-full text-left text-[12px] px-3 py-1 rounded-xl truncate transition-colors"
-                  style={{ color: "#999" }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "#1a1a1a")
-                  }
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#999")}
-                >
-                  {item}
-                </button>
-              )
-            )}
-          </div>
+            );
+          })}
         </div>
 
-        {/* User footer */}
-        <div
-          className="shrink-0 px-4 pb-4 pt-2"
-          style={{ borderTop: "1px solid #e6e6e0" }}
-        >
-          <div
-            className="flex items-center gap-3 px-3 py-2.5 rounded-2xl"
-            style={{ background: "#1a1a1a" }}
-          >
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[12px] font-bold shrink-0"
-              style={{
-                background: "linear-gradient(135deg, #a78bfa, #60a5fa)",
-              }}
-            >
-              U
+        {/* User profile footer */}
+        <div className="p-4 border-t border-black/10 shrink-0">
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-neutral-50 border border-black/5">
+            <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-[12px] font-bold shrink-0">
+              {userName.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-white truncate">
-                You
+              <p className="text-[13px] font-medium text-black truncate">
+                {userName}
               </p>
-              <p className="text-[11px]" style={{ color: "#666" }}>
-                Free plan
+              <p className="text-[11px] text-neutral-400 truncate">
+                Workspace
               </p>
             </div>
-            <button
-              className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-lg"
-              style={{ background: "#a3e635", color: "#1a1a1a" }}
-            >
-              Upgrade
-            </button>
           </div>
         </div>
       </aside>
 
-      {/* ════════════════════════════════════════
-          MAIN
-      ════════════════════════════════════════ */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {/* ─── MAIN CONTENT ─── */}
+      <main className="flex-1 flex flex-col min-w-0 bg-white">
         {/* Top bar */}
-        <header
-          className="flex items-center justify-between px-6 h-12 shrink-0"
-          style={{ borderBottom: "1px solid #e6e6e0", background: "#f9f9f6" }}
-        >
-          <div className="flex items-center gap-2">
+        <header className="flex items-center justify-between px-6 h-14 shrink-0 border-b border-black/10 bg-white">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarCollapsed((p) => !p)}
-              className="w-8 h-8 flex items-center justify-center rounded-xl transition-colors"
-              style={{ color: "#888" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#eeeeea")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "transparent")
-              }
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-black transition"
+              title="Toggle sidebar"
             >
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <path d="M9 3v18" />
               </svg>
             </button>
-            <span
-              className="text-[14px] font-semibold"
-              style={{ color: "#1a1a1a" }}
-            >
-              StackPilot
-            </span>
-            <span
-              className="text-[11px] px-2 py-0.5 rounded-full font-medium"
-              style={{ background: "#eeeeea", color: "#888" }}
-            >
-              v1.0
-            </span>
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="#ccc"
-              strokeWidth="1.5"
-            >
-              <path d="M4 6l4 4 4-4" />
-            </svg>
+            <span className="text-sm font-medium text-neutral-500">Dashboard</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-1.5 px-4 h-8 rounded-2xl text-[13px] font-semibold transition-colors"
-              style={{ background: "#1a1a1a", color: "#fff" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#333")}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "#1a1a1a")
-              }
+              className="flex items-center gap-1.5 px-4 h-9 rounded-full text-xs font-semibold bg-black text-white hover:bg-neutral-800 transition active:scale-[0.98]"
             >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M12 5v14M5 12h14" />
               </svg>
               New Project
             </button>
-            <button
-              className="flex items-center gap-1.5 px-4 h-8 rounded-2xl text-[13px] font-medium border transition-colors"
-              style={{
-                borderColor: "#e0e0da",
-                color: "#555",
-                background: "transparent",
-              }}
-            >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-              </svg>
-              Export
-            </button>
           </div>
         </header>
 
-        {/* Body */}
-        <div
-          className="flex-1 overflow-y-auto"
-          style={{ scrollbarWidth: "none" }}
-        >
-          <div className="max-w-2xl mx-auto px-6 py-8">
-            {/* Hero */}
-            <div className="text-center mb-7">
-              <h1
-                className="text-[38px] font-bold leading-[1.15] tracking-tight mb-2"
-                style={{ color: "#1a1a1a" }}
-              >
-                Build Smarter Apps
-                <br />
-                <span
-                  style={{
-                    color: "#aaa",
-                    fontStyle: "italic",
-                    fontWeight: 400,
-                  }}
-                >
-                  with Adaptive Intelligence
-                </span>
+        {/* Center Canvas */}
+        <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-4 py-8">
+          <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+            {/* Minimalist Heading: "what's in your mind today, {username}" */}
+            <div className="text-center mb-8">
+              <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-black">
+                What&apos;s on your mind today,{" "}
+                <span className="font-bold text-black">{userName}</span>?
               </h1>
-              <p className="text-[14px]" style={{ color: "#bbb" }}>
-                StackPilot scaffolds, edits, and deploys your full-stack
-                projects.
-              </p>
             </div>
 
-            {/* Chat box */}
-            <div
-              className="rounded-3xl overflow-hidden mb-3"
-              style={{
-                background: "#fff",
-                border: "1px solid #e6e6e0",
-                boxShadow: "0 4px 28px rgba(0,0,0,0.06)",
-              }}
-            >
-              {/* Messages */}
-              {chatMessages.length > 0 && (
-                <div
-                  className="max-h-56 overflow-y-auto px-5 pt-4 space-y-3"
-                  style={{ scrollbarWidth: "none" }}
-                >
-                  {chatMessages.map((m, i) => (
-                    <div
-                      key={i}
-                      className={`flex gap-2.5 ${m.role === "user" ? "justify-end" : "justify-start"}`}
-                    >
-                      {m.role === "ai" && (
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5"
-                          style={{ background: "#cff589", color: "#1a3a00" }}
-                        >
-                          K
-                        </div>
-                      )}
-                      <div
-                        className="text-[13px] px-4 py-2.5 max-w-[78%] leading-relaxed"
-                        style={{
-                          background: m.role === "user" ? "#1a1a1a" : "#f4f4ef",
-                          color: m.role === "user" ? "#fff" : "#333",
-                          borderRadius:
-                            m.role === "user"
-                              ? "18px 18px 4px 18px"
-                              : "18px 18px 18px 4px",
-                        }}
-                      >
-                        {m.text}
-                      </div>
-                    </div>
-                  ))}
-                  {aiTyping && (
-                    <div className="flex gap-2.5">
-                      <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
-                        style={{ background: "#cff589", color: "#1a3a00" }}
-                      >
-                        K
-                      </div>
-                      <div
-                        className="flex items-center gap-1.5 px-4 py-3 rounded-2xl"
-                        style={{ background: "#f4f4ef" }}
-                      >
-                        <span
-                          className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
-                          style={{ animationDelay: "0ms" }}
-                        />
-                        <span
-                          className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
-                          style={{ animationDelay: "150ms" }}
-                        />
-                        <span
-                          className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
-                          style={{ animationDelay: "300ms" }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  <div ref={chatEndRef} />
-                </div>
-              )}
-
-              {/* Textarea */}
-              <div className="px-5 pt-4 pb-2">
-                <textarea
-                  ref={textareaRef}
-                  value={chatInput}
-                  onChange={(e) => {
-                    setChatInput(e.target.value);
-                    autoResize();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  placeholder="Ask anything you want..."
-                  rows={1}
-                  className="w-full outline-none resize-none text-[14px] bg-transparent leading-relaxed placeholder:text-[#ccc]"
-                  style={{
-                    color: "#1a1a1a",
-                    caretColor: "#1a1a1a",
-                    minHeight: 28,
-                    maxHeight: 130,
-                  }}
-                />
-              </div>
-
-              {/* Toolbar */}
-              <div className="flex items-center justify-between px-4 pb-3">
-                <div className="flex items-center gap-0.5">
-                  {/* Attach */}
-                  <button
-                    className="flex items-center justify-center w-9 h-9 rounded-2xl transition-colors"
-                    style={{ color: "#bbb" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "#f4f4ef")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
-                    }
-                    title="Attach"
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                    >
-                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
-                    </svg>
-                  </button>
-                  {/* Create image */}
-                  <button
-                    className="flex items-center gap-1.5 px-3 h-9 rounded-2xl text-[12px] transition-colors"
-                    style={{ color: "#888" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "#f4f4ef")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
-                    }
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    >
-                      <rect x="3" y="3" width="18" height="18" rx="3" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                    Create an image
-                  </button>
-                  {/* Search web */}
-                  <button
-                    className="flex items-center gap-1.5 px-3 h-9 rounded-2xl text-[12px] transition-colors"
-                    style={{ color: "#888" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "#f4f4ef")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
-                    }
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="2" y1="12" x2="22" y2="12" />
-                      <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
-                    </svg>
-                    Search the web
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {/* Mic */}
-                  <button
-                    className="w-9 h-9 flex items-center justify-center rounded-2xl transition-colors"
-                    style={{ color: "#bbb" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "#f4f4ef")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
-                    }
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                    >
-                      <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-                      <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" />
-                    </svg>
-                  </button>
-                  {/* Send */}
-                  <button
-                    onClick={handleSend}
-                    disabled={!chatInput.trim()}
-                    className="w-9 h-9 flex items-center justify-center rounded-2xl transition-all"
-                    style={{
-                      background: chatInput.trim() ? "#a3e635" : "#eeeeea",
-                      color: chatInput.trim() ? "#1a1a1a" : "#ccc",
-                    }}
-                  >
-                    <svg
-                      width="15"
-                      height="15"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <line x1="12" y1="19" x2="12" y2="5" />
-                      <polyline points="5 12 12 5 19 12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Saved prompts label */}
-            <div className="flex items-center gap-1.5 mb-3 px-1">
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#bbb"
-                strokeWidth="2"
-              >
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-              <span className="text-[12px]" style={{ color: "#bbb" }}>
-                Saved prompts
-              </span>
-            </div>
-
-            {/* Prompt cards */}
-            <div className="grid grid-cols-3 gap-3">
-              {SAVED_PROMPTS.map(({ bg, iconBg, title, bold, desc }, i) => (
-                <button
-                  key={title}
-                  onClick={() => setChatInput(title)}
-                  className="text-left p-4 rounded-2xl transition-all"
-                  style={{ background: bg, transition: "all 0.18s" }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.transform =
-                      "translateY(-2px)";
-                    (e.currentTarget as HTMLElement).style.boxShadow =
-                      "0 8px 20px rgba(0,0,0,0.08)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.transform =
-                      "translateY(0)";
-                    (e.currentTarget as HTMLElement).style.boxShadow = "none";
-                  }}
-                >
+            {/* Chat Messages (if active) */}
+            {chatMessages.length > 0 && (
+              <div className="w-full mb-6 max-h-72 overflow-y-auto space-y-3 px-1">
+                {chatMessages.map((m, i) => (
                   <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
-                    style={{ background: iconBg }}
+                    key={i}
+                    className={`flex gap-2.5 ${m.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    {PROMPT_ICONS[i]}
+                    {m.role === "ai" && (
+                      <div className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-1">
+                        SP
+                      </div>
+                    )}
+                    <div
+                      className={`text-[13px] px-4 py-2.5 max-w-[80%] leading-relaxed ${
+                        m.role === "user"
+                          ? "bg-black text-white rounded-2xl rounded-tr-sm"
+                          : "bg-neutral-100 text-black border border-black/5 rounded-2xl rounded-tl-sm"
+                      }`}
+                    >
+                      {m.text}
+                    </div>
                   </div>
-                  <p
-                    className="text-[13px] font-semibold mb-1"
-                    style={{ color: "#1a1a1a" }}
-                  >
-                    <strong>{bold}</strong> {title.replace(bold, "").trim()}
-                  </p>
-                  <p
-                    className="text-[11px] leading-relaxed"
-                    style={{ color: "#777" }}
-                  >
-                    {desc}
-                  </p>
+                ))}
+
+                {aiTyping && (
+                  <div className="flex gap-2.5 items-center">
+                    <div className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                      SP
+                    </div>
+                    <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-neutral-100 text-neutral-500 text-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce [animation-delay:150ms]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce [animation-delay:300ms]" />
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+            )}
+
+            {/* Clean Prompt Input Card */}
+            <div className="w-full rounded-2xl border border-black/15 bg-white p-4 shadow-sm transition focus-within:border-black/50 focus-within:shadow-md">
+              <textarea
+                ref={textareaRef}
+                value={chatInput}
+                onChange={(e) => {
+                  setChatInput(e.target.value);
+                  autoResize();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder="Ask anything or describe what you want to build..."
+                rows={1}
+                className="w-full outline-none resize-none text-[15px] bg-transparent leading-relaxed text-black placeholder:text-neutral-400 min-h-[36px] max-h-[180px]"
+              />
+
+              <div className="flex items-center justify-between pt-3 mt-1 border-t border-black/5">
+                <div className="flex items-center gap-1.5 text-xs text-neutral-400">
+                  <span>Press <kbd className="px-1.5 py-0.5 rounded border border-black/10 bg-neutral-50 text-[10px] font-mono text-neutral-600">Enter</kbd> to submit</span>
+                </div>
+
+                <button
+                  onClick={handleSend}
+                  disabled={!chatInput.trim()}
+                  className="flex items-center justify-center px-4 h-8 rounded-full text-xs font-semibold bg-black text-white hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                >
+                  <span>Send</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="ml-1.5">
+                    <line x1="12" y1="19" x2="12" y2="5" />
+                    <polyline points="5 12 12 5 19 12" />
+                  </svg>
                 </button>
-              ))}
+              </div>
             </div>
 
-            {/* Build log */}
+            {/* Build Log Card if building */}
             {overlayStep !== "idle" && (
-              <div
-                className="mt-5 rounded-2xl p-4"
-                style={{ background: "#1a1a1a", border: "1px solid #2a2a2a" }}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  {overlayStep !== "done" && (
-                    <span className="text-[#a3e635]">
-                      <Spinner />
-                    </span>
-                  )}
-                  {overlayStep === "done" && (
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#a3e635"
-                      strokeWidth="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                  <span className="text-[13px] font-medium text-white">
-                    {overlayStep === "creating" &&
-                      "Creating project structure..."}
+              <div className="w-full mt-6 rounded-2xl p-4 bg-neutral-900 text-white border border-neutral-800 shadow-md">
+                <div className="flex items-center gap-2 mb-2 text-xs font-medium">
+                  {overlayStep !== "done" ? <Spinner /> : <span className="text-green-400">✓</span>}
+                  <span>
+                    {overlayStep === "creating" && "Creating project structure..."}
                     {overlayStep === "logs" && "Scaffolding dependencies..."}
                     {overlayStep === "done" && "Project ready! Redirecting..."}
                   </span>
                 </div>
-                <div
-                  className="space-y-0.5 max-h-36 overflow-y-auto"
-                  style={{ scrollbarWidth: "none" }}
-                >
+                <div className="space-y-0.5 max-h-36 overflow-y-auto text-xs font-mono">
                   {logs.map((log, i) => (
                     <LogLine key={i} text={log} i={i} />
                   ))}
@@ -1088,63 +402,32 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* ════════════════════════════════════════
-          CREATE PROJECT MODAL
-      ════════════════════════════════════════ */}
+      {/* ─── CREATE PROJECT MODAL ─── */}
       {showModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{
-            background: "rgba(0,0,0,0.35)",
-            backdropFilter: "blur(6px)",
-          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={() => setShowModal(false)}
         >
           <div
-            className="w-full max-w-md rounded-3xl p-7"
-            style={{
-              background: "#fff",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
-            }}
+            className="w-full max-w-md rounded-3xl p-7 bg-white text-black shadow-2xl border border-black/10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2
-                  className="text-[18px] font-bold"
-                  style={{ color: "#1a1a1a" }}
-                >
-                  Create New Project
-                </h2>
-                <p className="text-[12px] mt-0.5" style={{ color: "#aaa" }}>
+                <h2 className="text-lg font-bold text-black">Create New Project</h2>
+                <p className="text-xs text-neutral-500 mt-0.5">
                   StackPilot will scaffold it for you
                 </p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-xl transition-colors text-[#888]"
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#f4f4ef")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
+                className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:text-black hover:bg-neutral-100 transition"
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                >
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
+                ✕
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {[
                 {
                   label: "Project Name",
@@ -1163,28 +446,14 @@ export default function DashboardPage() {
                 },
               ].map(({ label, placeholder, setter }) => (
                 <div key={label}>
-                  <label
-                    className="block text-[11px] font-bold mb-1.5 uppercase tracking-wider"
-                    style={{ color: "#aaa" }}
-                  >
+                  <label className="block text-[11px] font-semibold mb-1 uppercase tracking-wider text-neutral-500">
                     {label}
                   </label>
                   <input
                     type="text"
                     placeholder={placeholder}
                     onChange={(e) => setter(e.target.value)}
-                    className="w-full px-4 h-11 rounded-2xl text-[13px] outline-none transition-all"
-                    style={{
-                      background: "#f4f4ef",
-                      border: "1.5px solid #e6e6e0",
-                      color: "#1a1a1a",
-                    }}
-                    onFocus={(e) =>
-                      (e.currentTarget.style.borderColor = "#a3e635")
-                    }
-                    onBlur={(e) =>
-                      (e.currentTarget.style.borderColor = "#e6e6e0")
-                    }
+                    className="w-full px-4 h-10 rounded-xl text-sm outline-none bg-neutral-50 border border-black/10 focus:border-black text-black transition placeholder:text-neutral-400"
                   />
                 </div>
               ))}
@@ -1192,25 +461,10 @@ export default function DashboardPage() {
 
             <button
               onClick={handleCreateProject}
-              className="w-full h-12 rounded-2xl text-[14px] font-bold mt-5 transition-all"
-              style={{ background: "#1a1a1a", color: "#fff" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#a3e635";
-                e.currentTarget.style.color = "#1a1a1a";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "#1a1a1a";
-                e.currentTarget.style.color = "#fff";
-              }}
+              className="w-full h-11 rounded-full text-sm font-semibold mt-6 bg-black text-white hover:bg-neutral-800 transition active:scale-[0.98]"
             >
               Create Project
             </button>
-            <p
-              className="text-center text-[11px] mt-3"
-              style={{ color: "#ccc" }}
-            >
-              This will scaffold your project using the StackPilot backend
-            </p>
           </div>
         </div>
       )}
