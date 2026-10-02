@@ -1,6 +1,6 @@
 # StackPilot AI
 
-> **AI that builds software with you.**
+> **AI that builds software with you and understand .**
 
 StackPilot AI is an autonomous, multi-agent software engineering platform engineered to transform high-level software ideas into production-ready, tested, and deployed applications. Instead of treating artificial intelligence as a disconnected snippet generator or an autocomplete utility, StackPilot AI unifies the entire software development lifecycle (SDLC) into a continuous, self-operating engineering pipeline. Through coordinated specialist agents operating inside an integrated developer environment, the platform autonomously handles architecture planning, semantic codebase retrieval, parallel code synthesis, multi-stage testing, self-healing bug remediation, and cloud deployment.
 
