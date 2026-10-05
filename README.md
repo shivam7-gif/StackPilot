@@ -26,7 +26,7 @@ Whether operated through its browser-based developer studio or lightweight CLI, 
 
 ## 🚨 Problem
 
-Modern software development with AI tools is constrained by four fundamental bottlenecks:
+Modern software development with AI tools is constrained by four fundamental :
 
 ### 1. AI Context Amnesia
 Large Language Models operate within finite context windows and lack durable state persistence. As development sessions extend over days or weeks, LLMs gradually lose awareness of architectural decisions, interface contracts, internal dependencies, and project conventions established in earlier iterations. Developers are repeatedly forced to restate requirements, re-upload schemas, and manually steer models back onto architectural guidelines.
