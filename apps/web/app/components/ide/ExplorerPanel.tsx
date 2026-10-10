@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TreeStructure } from "../TreeStructure/TreeStructure";
+import { useTreeStructureStore } from "@/store/TreeStructureStore";
 
 interface ExplorerPanelProps {
   width: number;
@@ -62,6 +63,13 @@ export default function ExplorerPanel({ width }: ExplorerPanelProps) {
   const [activeView, setActiveView] = useState<SidebarView>("files");
   const [explorerCollapsed, setExplorerCollapsed] = useState(false);
   const [hovering, setHovering] = useState(false);
+  const {
+    projectId,
+    treeStructure,
+    setTreeStructure,
+    triggerCollapseAll,
+    setNewFileInput,
+  } = useTreeStructureStore();
 
   return (
     <div
@@ -89,7 +97,7 @@ export default function ExplorerPanel({ width }: ExplorerPanelProps) {
                 key={id}
                 title={label}
                 onClick={() => setActiveView(id)}
-                className="activity-item relative w-[40px] h-[40px] flex items-center justify-center rounded-lg transition-all"
+                className="activity-item relative w-[40px] h-[40px] flex items-center justify-center rounded-lg transition-all cursor-pointer"
                 style={{
                   color: isActive ? "var(--ide-text-bright)" : "var(--ide-text-dim)",
                   background: isActive ? "var(--ide-hover)" : "transparent",
@@ -132,7 +140,7 @@ export default function ExplorerPanel({ width }: ExplorerPanelProps) {
         <div className="flex flex-col items-center gap-0.5 pb-1">
           <button
             title="Account"
-            className="w-[34px] h-[34px] flex items-center justify-center rounded-lg transition-all"
+            className="w-[34px] h-[34px] flex items-center justify-center rounded-lg transition-all cursor-pointer"
             style={{ color: "var(--ide-text-dim)" }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = "var(--ide-text-muted)";
@@ -150,7 +158,7 @@ export default function ExplorerPanel({ width }: ExplorerPanelProps) {
           </button>
           <button
             title="Settings"
-            className="w-[34px] h-[34px] flex items-center justify-center rounded-lg transition-all"
+            className="w-[34px] h-[34px] flex items-center justify-center rounded-lg transition-all cursor-pointer"
             style={{ color: "var(--ide-text-dim)" }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = "var(--ide-text-muted)";
@@ -183,49 +191,75 @@ export default function ExplorerPanel({ width }: ExplorerPanelProps) {
               <span className="panel-header">Explorer</span>
               <div
                 className="flex items-center gap-0.5 transition-opacity"
-                style={{ opacity: hovering ? 1 : 0 }}
+                style={{ opacity: hovering ? 1 : 0.7 }}
               >
                 {[
                   {
                     title: "New File",
                     icon: (
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                         <polyline points="14 2 14 8 20 8" />
                         <line x1="12" y1="18" x2="12" y2="12" />
                         <line x1="9" y1="15" x2="15" y2="15" />
                       </svg>
                     ),
+                    onClick: () => {
+                      setNewFileInput({
+                        parentPath: treeStructure?.path ?? "",
+                        isFolder: false,
+                      });
+                    },
                   },
                   {
                     title: "New Folder",
                     icon: (
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
                         <line x1="12" y1="11" x2="12" y2="17" />
                         <line x1="9" y1="14" x2="15" y2="14" />
                       </svg>
                     ),
-                    onClick: () => {},
+                    onClick: () => {
+                      setNewFileInput({
+                        parentPath: treeStructure?.path ?? "",
+                        isFolder: true,
+                      });
+                    },
                   },
                   {
-                    title: "Collapse All",
+                    title: "Refresh Explorer",
                     icon: (
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="15 3 9 3 9 9 3 9" />
-                        <polyline points="21 9 21 3 15 3" />
-                        <polyline points="3 15 9 15 9 21" />
-                        <polyline points="15 21 21 21 21 15" />
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118.8-4.3M22 12.5a10 10 0 01-18.8 4.2"/>
                       </svg>
                     ),
-                    onClick: () => setExplorerCollapsed((p) => !p),
+                    onClick: () => {
+                      if (projectId) {
+                        void setTreeStructure(projectId);
+                      }
+                    },
+                  },
+                  {
+                    title: "Collapse Folders in Explorer",
+                    icon: (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="4 14 10 14 10 20"/>
+                        <polyline points="20 10 14 10 14 4"/>
+                        <line x1="14" y1="10" x2="21" y2="3"/>
+                        <line x1="3" y1="21" x2="10" y2="14"/>
+                      </svg>
+                    ),
+                    onClick: () => {
+                      triggerCollapseAll();
+                    },
                   },
                 ].map(({ title, icon, onClick }) => (
                   <button
                     key={title}
                     title={title}
                     onClick={onClick}
-                    className="w-[22px] h-[22px] flex items-center justify-center rounded-md transition-all"
+                    className="w-[22px] h-[22px] flex items-center justify-center rounded-md transition-all cursor-pointer"
                     style={{ color: "var(--ide-text-muted)" }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = "var(--ide-hover-strong)";

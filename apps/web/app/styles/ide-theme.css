@@ -1,0 +1,128 @@
+/* ─── STACKPILOT IDE THEME SYSTEM ─── */
+
+:root,
+[data-theme='dark'],
+.ide-dark {
+  --ide-bg: #1e1e1e;
+  --ide-titlebar-bg: #181818;
+  --ide-sidebar-bg: #181818;
+  --ide-activity-bg: #141414;
+  --ide-border: rgba(255, 255, 255, 0.08);
+  --ide-border-strong: rgba(255, 255, 255, 0.15);
+  --ide-hover: rgba(255, 255, 255, 0.06);
+  --ide-hover-strong: rgba(255, 255, 255, 0.12);
+  --ide-selected: #264f78;
+  --ide-selected-text: #ffffff;
+  --ide-text: #cccccc;
+  --ide-text-bright: #ffffff;
+  --ide-text-muted: #999999;
+  --ide-text-dim: #666666;
+  --ide-accent: #5227ff;
+  --ide-accent-dim: rgba(82, 39, 255, 0.2);
+  --ide-react-color: #61dafb;
+  --ide-chat-user-bg: #2d2d30;
+  --ide-chat-user-text: #ffffff;
+  --ide-chat-ai-bg: #252526;
+  --ide-chat-ai-text: #d4d4d4;
+  --ide-code-bg: #141414;
+  --ide-input-bg: #252526;
+  --ide-input-border: rgba(255, 255, 255, 0.1);
+  --ide-suggestion-bg: rgba(255, 255, 255, 0.03);
+  --ide-suggestion-border: rgba(255, 255, 255, 0.08);
+  --ide-suggestion-hover: rgba(255, 255, 255, 0.07);
+  color-scheme: dark;
+}
+
+/* Light / White Theme */
+[data-theme='light'],
+.ide-light {
+  --ide-bg: #ffffff;
+  --ide-titlebar-bg: #f8fafc;
+  --ide-sidebar-bg: #f1f5f9;
+  --ide-activity-bg: #e2e8f0;
+  --ide-border: #e2e8f0;
+  --ide-border-strong: #cbd5e1;
+  --ide-hover: rgba(0, 0, 0, 0.05);
+  --ide-hover-strong: rgba(0, 0, 0, 0.08);
+  --ide-selected: #e0e7ff;
+  --ide-selected-text: #4338ca;
+  --ide-text: #334155;
+  --ide-text-bright: #0f172a;
+  --ide-text-muted: #64748b;
+  --ide-text-dim: #94a3b8;
+  --ide-accent: #5227ff;
+  --ide-accent-dim: rgba(82, 39, 255, 0.12);
+  --ide-react-color: #0284c7;
+  --ide-chat-user-bg: #5227ff;
+  --ide-chat-user-text: #ffffff;
+  --ide-chat-ai-bg: #f8fafc;
+  --ide-chat-ai-text: #1e293b;
+  --ide-code-bg: #f1f5f9;
+  --ide-input-bg: #ffffff;
+  --ide-input-border: #e2e8f0;
+  --ide-suggestion-bg: #ffffff;
+  --ide-suggestion-border: #e2e8f0;
+  --ide-suggestion-hover: #f1f5f9;
+  color-scheme: light;
+}
+
+/* Light Scrollbars for IDE */
+[data-theme='light'] ::-webkit-scrollbar-track,
+.ide-light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+[data-theme='light'] ::-webkit-scrollbar-thumb,
+.ide-light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+[data-theme='light'] ::-webkit-scrollbar-thumb:hover,
+.ide-light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* IDE Specific Light Tweaks */
+.ide-light .chat-code-block {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+}
+
+.ide-light .context-chip {
+  background: #e2e8f0;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.ide-light .typing-dot {
+  background-color: #64748b;
+}
+
+html.light body,
+[data-theme='light'] body,
+body:has(.ide-light) {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Universal cursor: pointer for all IDE clickable and interactive elements */
+button,
+[role="button"],
+.tab-item,
+.tab-close-btn,
+.activity-item,
+.panel-header,
+header button,
+footer button,
+footer span,
+nav button,
+a,
+.cursor-pointer,
+button:not(:disabled),
+button:not(:disabled) * {
+  cursor: pointer !important;
+}
+
+

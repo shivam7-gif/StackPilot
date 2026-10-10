@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useFileContextMenuStore } from "@/store/fileContextMenuStore";
 import { useEditorSocketStore } from "@/store/EditorSocketStores";
 import { useActiveFileTabStore } from "@/store/activeFileTabStore";
+import { useTreeStructureStore } from "@/store/TreeStructureStore";
 
 interface FileContextMenuProps {
   x: number;
@@ -47,7 +48,7 @@ function MenuSeparator() {
   return (
     <div
       className="my-1 mx-2"
-      style={{ height: 1, background: "#454545" }}
+      style={{ height: 1, background: "var(--ide-border)" }}
       role="separator"
     />
   );
@@ -69,16 +70,16 @@ function MenuButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="w-full flex items-center h-[22px] px-3 text-left text-[13px] transition-colors disabled:opacity-40 disabled:cursor-default"
-      style={{ color: danger ? "#f48771" : "#cccccc" }}
+      className="w-full flex items-center h-[24px] px-3 text-left text-[13px] transition-colors disabled:opacity-40 disabled:cursor-default rounded-sm"
+      style={{ color: danger ? "#ef4444" : "var(--ide-text)" }}
       onMouseEnter={(e) => {
         if (disabled) return;
-        e.currentTarget.style.background = "#04395e";
-        e.currentTarget.style.color = danger ? "#f48771" : "#ffffff";
+        e.currentTarget.style.background = "var(--ide-hover)";
+        e.currentTarget.style.color = danger ? "#ef4444" : "var(--ide-text-bright)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.background = "transparent";
-        e.currentTarget.style.color = danger ? "#f48771" : "#cccccc";
+        e.currentTarget.style.color = danger ? "#ef4444" : "var(--ide-text)";
       }}
     >
       {label}
@@ -140,19 +141,28 @@ export const FileContextMenu = ({
     close();
   };
 
+  const { setNewFileInput, setTreeStructure } = useTreeStructureStore();
+
   const handleNewFile = () => {
-    if (!editorSocket || !isFolder) return;
-    editorSocket.emit("createFile", {
-      pathToFileFolder: `${path}/NewFile.tsx`,
-    });
+    setNewFileInput({ parentPath: path, isFolder: false });
     close();
   };
 
   const handleNewFolder = () => {
-    if (!editorSocket || !isFolder) return;
-    editorSocket.emit("createFolder", {
-      pathToFileFolder: `${path}/NewFolder`,
-    });
+    setNewFileInput({ parentPath: path, isFolder: true });
+    close();
+  };
+
+  const handleOpenFile = () => {
+    if (!editorSocket) return;
+    editorSocket.emit("readFile", { pathToFileFolder: path });
+    close();
+  };
+
+  const handleRefresh = () => {
+    if (projectId) {
+      void setTreeStructure(projectId);
+    }
     close();
   };
 
@@ -164,6 +174,7 @@ export const FileContextMenu = ({
     ? [
         { type: "action", id: "new-file", label: "New File" },
         { type: "action", id: "new-folder", label: "New Folder" },
+        { type: "action", id: "refresh", label: "Refresh Folder" },
         { type: "separator" },
         { type: "action", id: "copy-path", label: "Copy Path" },
         { type: "action", id: "copy-relative-path", label: "Copy Relative Path" },
@@ -172,6 +183,9 @@ export const FileContextMenu = ({
         { type: "action", id: "delete", label: "Delete", danger: true },
       ]
     : [
+        { type: "action", id: "open-file", label: "Open File" },
+        { type: "action", id: "close-tab", label: "Close Tab" },
+        { type: "separator" },
         { type: "action", id: "copy-path", label: "Copy Path" },
         { type: "action", id: "copy-relative-path", label: "Copy Relative Path" },
         { type: "separator" },
@@ -186,6 +200,16 @@ export const FileContextMenu = ({
         break;
       case "new-folder":
         handleNewFolder();
+        break;
+      case "open-file":
+        handleOpenFile();
+        break;
+      case "close-tab":
+        closeTab(path);
+        close();
+        break;
+      case "refresh":
+        handleRefresh();
         break;
       case "copy-path":
         void copyToClipboard(path);
@@ -205,13 +229,13 @@ export const FileContextMenu = ({
   return (
     <div
       ref={menuRef}
-      className="fixed z-[9999] py-1 min-w-[180px] select-none"
+      className="fixed z-[9999] py-1 min-w-[180px] select-none rounded-md"
       style={{
         left: position.x,
         top: position.y,
-        background: "#252526",
-        border: "1px solid #454545",
-        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.36)",
+        background: "var(--ide-titlebar-bg)",
+        border: "1px solid var(--ide-border)",
+        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
       }}
       onContextMenu={(e) => e.preventDefault()}
     >

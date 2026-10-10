@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 type Theme = "dark" | "light";
 
@@ -8,9 +9,16 @@ interface ThemeStore {
   setTheme: (t: Theme) => void;
 }
 
-export const useThemeStore = create<ThemeStore>((set) => ({
-  theme: "dark",
-  toggleTheme: () =>
-    set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
-  setTheme: (theme) => set({ theme }),
-}));
+export const useThemeStore = create<ThemeStore>()(
+  persist(
+    (set) => ({
+      theme: "dark",
+      toggleTheme: () =>
+        set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
+      setTheme: (theme) => set({ theme }),
+    }),
+    {
+      name: "stackpilot_theme",
+    }
+  )
+);

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { Socket } from "socket.io-client";
+import debounce from "lodash/debounce";
 import { useActiveFileTabStore } from "./activeFileTabStore";
 import { useTreeStructureStore } from "./TreeStructureStore";
 
@@ -57,10 +58,19 @@ const handleFileChanged = (payload: FileChangedPayload) => {
   updateTabValue(payload.path, payload.value);
 };
 
-const handleFileSystemChanged = () => {
-  const { projectId, setTreeStructure } = useTreeStructureStore.getState();
+const debouncedRefreshTree = debounce((projectId: string) => {
+  const { setTreeStructure } = useTreeStructureStore.getState();
+  void setTreeStructure(projectId, true);
+}, 300);
+
+const handleFileSystemChanged = (payload?: { event?: string; path?: string }) => {
+  // Ignore content edits ("change") - they do not modify directory hierarchy
+  if (payload?.event === "change") {
+    return;
+  }
+  const { projectId } = useTreeStructureStore.getState();
   if (projectId) {
-    void setTreeStructure(projectId);
+    debouncedRefreshTree(projectId);
   }
 };
 
@@ -80,6 +90,7 @@ const registerEditorSocketListeners = (
 };
 
 const unregisterEditorSocketListeners = (socket: Socket) => {
+  debouncedRefreshTree.cancel();
   socket.off("readFileSuccess", handleReadFileSuccess);
   socket.off("fileChanged", handleFileChanged);
   socket.off("fileSystemChanged", handleFileSystemChanged);

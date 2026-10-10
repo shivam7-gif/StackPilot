@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "provider": "openrouter",
+    "baseUrl": "https://openrouter.ai/api/v1",
+    "endpoint": "/chat/completions",
+    "verifiedOn": "2026-10-05",
+    "note": "Free model availability changes often. Re-check https://openrouter.ai/models?max_price=0 and remove any ID that no longer works.",
+    "rateLimits": {
+      "scope": "per account (shared across ALL :free models, not per model)",
+      "requestsPerMinute": 20,
+      "tiers": [
+        {
+          "name": "free",
+          "condition": "less than $10 lifetime credits purchased",
+          "requestsPerDay": 50
+        },
+        {
+          "name": "topped-up",
+          "condition": "at least $10 lifetime credits purchased (one-time)",
+          "requestsPerDay": 1000
+        }
+      ]
+    }
+  },
+  "defaultModelId": "openrouter/free",
+  "models": [
+    {
+      "id": "openrouter/free",
+      "label": "Auto (Free Router)",
+      "tag": "Auto",
+      "provider": "OpenRouter",
+      "contextWindow": null,
+      "inputModalities": ["text"],
+      "bestFor": "Lets OpenRouter pick an available free model. Good default and fallback."
+    },
+    {
+      "id": "nvidia/nemotron-3.5-lightning:free",
+      "label": "Nemotron 3.5 Lightning",
+      "tag": "Long context",
+      "provider": "NVIDIA",
+      "contextWindow": 1000000,
+      "inputModalities": ["text"],
+      "bestFor": "Long documents and long agent chains"
+    },
+    {
+      "id": "thinkingmachines/inkling:free",
+      "label": "Inkling",
+      "tag": "Multimodal",
+      "provider": "Thinking Machines",
+      "contextWindow": 1048576,
+      "inputModalities": ["text", "image", "audio"],
+      "bestFor": "Large context with image and audio input"
+    },
+    {
+      "id": "qwen/qwen3.8-27b:free",
+      "label": "Qwen 3.8 27B",
+      "tag": "Vision",
+      "provider": "Qwen",
+      "contextWindow": 262144,
+      "inputModalities": ["text", "image", "video"],
+      "bestFor": "General chat with image and video understanding"
+    },
+    {
+      "id": "nvidia/nemotron-3-super-120b-a12b:free",
+      "label": "Nemotron 3 Super 120B",
+      "tag": "Reasoning",
+      "provider": "NVIDIA",
+      "contextWindow": 262144,
+      "inputModalities": ["text"],
+      "bestFor": "Large-context reasoning and agent workflows"
+    },
+    {
+      "id": "cohere/north-mini-code:free",
+      "label": "North Mini Code",
+      "tag": "Coding",
+      "provider": "Cohere",
+      "contextWindow": 256000,
+      "inputModalities": ["text"],
+      "bestFor": "Fast code generation and edits"
+    },
+    {
+      "id": "poolside/laguna-s-2.1:free",
+      "label": "Laguna S 2.1",
+      "tag": "Coding",
+      "provider": "Poolside",
+      "contextWindow": 262144,
+      "inputModalities": ["text"],
+      "bestFor": "Coding agents"
+    },
+    {
+      "id": "poolside/laguna-xs-2.1:free",
+      "label": "Laguna XS 2.1",
+      "tag": "Fast",
+      "provider": "Poolside",
+      "contextWindow": 262144,
+      "inputModalities": ["text"],
+      "bestFor": "Lightweight, quick coding tasks"
+    },
+    {
+      "id": "apodex/apodex-1.1-mini:free",
+      "label": "Apodex 1.1 Mini",
+      "tag": "Fast",
+      "provider": "Apodex",
+      "contextWindow": 262144,
+      "inputModalities": ["text"],
+      "bestFor": "Quick general-purpose replies"
+    },
+    {
+      "id": "inclusionai/ling-3.0-flash-sante:free",
+      "label": "Ling 3.0 Flash",
+      "tag": "Fast",
+      "provider": "inclusionAI",
+      "contextWindow": 262144,
+      "inputModalities": ["text"],
+      "bestFor": "Low-latency general chat"
+    },
+    {
+      "id": "liquid/lfm-2.5-2.6b:free",
+      "label": "LFM 2.5 2.6B",
+      "tag": "Tiny",
+      "provider": "Liquid AI",
+      "contextWindow": 65536,
+      "inputModalities": ["text"],
+      "bestFor": "Very small and fast; simple tasks and classification"
+    }
+  ]
+}

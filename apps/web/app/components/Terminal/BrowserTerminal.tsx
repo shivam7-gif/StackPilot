@@ -9,6 +9,7 @@ import "@xterm/xterm/css/xterm.css";
 import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { io, type Socket } from "socket.io-client";
 import { useParams } from "next/navigation";
+import { useThemeStore } from "@/store/useThemeStore";
 
 type TerminalTab = "terminal" | "problems" | "output" | "ports";
 
@@ -43,6 +44,30 @@ const CURSOR_TERMINAL_THEME = {
   brightWhite: "#e5e5e5",
 };
 
+const CURSOR_TERMINAL_LIGHT_THEME = {
+  background: "#ffffff",
+  foreground: "#334155",
+  cursor: "#0f172a",
+  cursorAccent: "#ffffff",
+  selectionBackground: "#bfdbfe",
+  black: "#0f172a",
+  red: "#dc2626",
+  green: "#16a34a",
+  yellow: "#ca8a04",
+  blue: "#2563eb",
+  magenta: "#9333ea",
+  cyan: "#0891b2",
+  white: "#f8fafc",
+  brightBlack: "#64748b",
+  brightRed: "#ef4444",
+  brightGreen: "#22c55e",
+  brightYellow: "#eab308",
+  brightBlue: "#3b82f6",
+  brightMagenta: "#a855f7",
+  brightCyan: "#06b6d4",
+  brightWhite: "#ffffff",
+};
+
 interface BrowserTerminalProps {
   height: number;
   onResizeStart: (e: React.MouseEvent) => void;
@@ -66,6 +91,8 @@ const TerminalInstance = memo(
     isActive: boolean;
     onConnectedChange: (connected: boolean) => void;
   }) => {
+    const { theme } = useThemeStore();
+    const isLight = theme === "light";
     const terminalRef = useRef<HTMLDivElement>(null);
     const xtermRef = useRef<Terminal | null>(null);
     const fitAddonRef = useRef<FitAddon | null>(null);
@@ -89,13 +116,19 @@ const TerminalInstance = memo(
     }, [isActive]);
 
     useEffect(() => {
+      if (xtermRef.current) {
+        xtermRef.current.options.theme = isLight ? CURSOR_TERMINAL_LIGHT_THEME : CURSOR_TERMINAL_THEME;
+      }
+    }, [isLight]);
+
+    useEffect(() => {
       if (!terminalRef.current) return;
 
       const term = new Terminal({
         cursorBlink: true,
         fontSize: 12,
         lineHeight: 1.2,
-        theme: CURSOR_TERMINAL_THEME,
+        theme: isLight ? CURSOR_TERMINAL_LIGHT_THEME : CURSOR_TERMINAL_THEME,
         fontFamily: '"JetBrains Mono", "Cascadia Code", Consolas, monospace',
         convertEol: true,
         scrollback: 5000,
@@ -273,14 +306,6 @@ export default function BrowserTerminal({
         >
           Terminal
         </span>
-        {!connected && (
-          <span
-            className="text-[10px]"
-            style={{ color: "var(--ide-text-dim)" }}
-          >
-            (disconnected)
-          </span>
-        )}
       </div>
     );
   }
@@ -373,7 +398,7 @@ export default function BrowserTerminal({
                   </span>
                   <button
                     onClick={(e) => handleDeleteTerminal(term.id, e)}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[#ffffff20] transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[#ffffff20] transition-all cursor-pointer"
                   >
                     <svg
                       width="10"
@@ -392,12 +417,6 @@ export default function BrowserTerminal({
           )}
 
           <div className="flex items-center gap-0.5 pr-2">
-            <span
-              className="text-[10px] px-2 mr-1 hidden sm:inline"
-              style={{ color: connected ? "#23d18b" : "var(--ide-text-dim)" }}
-            >
-              {connected ? "● connected" : "○ disconnected"}
-            </span>
             <PanelButton title="New terminal" onClick={handleNewTerminal}>
               <svg
                 width="13"
@@ -498,7 +517,7 @@ function PanelButton({
     <button
       title={title}
       onClick={onClick}
-      className="w-7 h-7 flex items-center justify-center rounded transition-colors"
+      className="w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer"
       style={{ color: "var(--ide-text-muted)" }}
       onMouseEnter={(e) => {
         e.currentTarget.style.color = "var(--ide-text)";

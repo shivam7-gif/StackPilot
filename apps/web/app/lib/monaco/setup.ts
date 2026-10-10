@@ -39,6 +39,38 @@ export function configureMonaco(monaco: Monaco) {
     },
   });
 
+  monaco.editor.defineTheme("stackpilot-light", {
+    base: "vs",
+    inherit: true,
+    rules: [
+      { token: "comment", foreground: "008000", fontStyle: "italic" },
+      { token: "keyword", foreground: "7C3AED" },
+      { token: "string", foreground: "059669" },
+      { token: "number", foreground: "D97706" },
+      { token: "type", foreground: "0D9488" },
+    ],
+    colors: {
+      "editor.background": "#ffffff",
+      "editor.foreground": "#1e293b",
+      "editor.lineHighlightBackground": "#f8fafc",
+      "editor.selectionBackground": "#bfdbfe",
+      "editor.inactiveSelectionBackground": "#e2e8f0",
+      "editorLineNumber.foreground": "#94a3b8",
+      "editorLineNumber.activeForeground": "#334155",
+      "editorCursor.foreground": "#0f172a",
+      "editorWhitespace.foreground": "#cbd5e1",
+      "editorIndentGuide.background": "#e2e8f0",
+      "editorIndentGuide.activeBackground": "#cbd5e1",
+      "editor.findMatchBackground": "#fef08a",
+      "editor.findMatchHighlightBackground": "#fef9c3",
+      "editorBracketMatch.background": "#e0e7ff",
+      "editorBracketMatch.border": "#818cf8",
+      "scrollbarSlider.background": "#cbd5e166",
+      "scrollbarSlider.hoverBackground": "#94a3b8aa",
+      "scrollbarSlider.activeBackground": "#64748b",
+    },
+  });
+
   const compilerOptions = {
     target: monaco.languages.typescript.ScriptTarget.ESNext,
     allowNonTsExtensions: true,

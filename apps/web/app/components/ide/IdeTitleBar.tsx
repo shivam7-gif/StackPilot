@@ -4,6 +4,10 @@ import { useState } from "react";
 import { useThemeStore } from "../../store/useThemeStore";
 import { ActivePreviewStore } from "../../store/activePreviewStore";
 import { useTreeStructureStore } from "../../store/TreeStructureStore";
+import { useActiveFileTabStore } from "@/store/activeFileTabStore";
+import { useEditorSocketStore } from "@/store/EditorSocketStores";
+import { useEditorStatusStore } from "@/store/useEditorStatusStore";
+import { useCommandPaletteStore } from "@/store/useCommandPaletteStore";
 import { API_BASE_URL } from "@/config/socket";
 
 interface IdeTitleBarProps {
@@ -43,21 +47,199 @@ export default function IdeTitleBar({ projectName }: IdeTitleBarProps) {
       </div>
 
       {/* Menu bar */}
-      <nav className="flex items-center h-full shrink-0">
+      <nav className="flex items-center h-full shrink-0 relative">
         {MENU_ITEMS.map((item) => (
-          <button
-            key={item}
-            onMouseEnter={() => activeMenu && setActiveMenu(item)}
-            onClick={() => setActiveMenu(activeMenu === item ? null : item)}
-            onBlur={() => setActiveMenu(null)}
-            className="px-2.5 h-full text-[12px] font-medium transition-colors"
-            style={{
-              background: activeMenu === item ? "var(--ide-hover-strong)" : "transparent",
-              color: activeMenu === item ? "var(--ide-text-bright)" : "var(--ide-text-muted)",
-            }}
-          >
-            {item}
-          </button>
+          <div key={item} className="relative h-full flex items-center">
+            <button
+              onMouseEnter={() => activeMenu && setActiveMenu(item)}
+              onClick={() => setActiveMenu(activeMenu === item ? null : item)}
+              className="px-2.5 h-full text-[12px] font-medium transition-colors cursor-pointer"
+              style={{
+                background:
+                  activeMenu === item ? "var(--ide-hover-strong)" : "transparent",
+                color:
+                  activeMenu === item
+                    ? "var(--ide-text-bright)"
+                    : "var(--ide-text-muted)",
+              }}
+            >
+              {item}
+            </button>
+
+            {activeMenu === item && (
+              <div
+                className="absolute left-0 top-[38px] py-1 min-w-[210px] rounded-md shadow-2xl z-[99999] border text-[12px]"
+                style={{
+                  background: "var(--ide-titlebar-bg)",
+                  borderColor: "var(--ide-border)",
+                  color: "var(--ide-text)",
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                {item === "File" && (
+                  <>
+                    <button
+                      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[var(--ide-hover)]"
+                      onClick={() => {
+                        useTreeStructureStore.getState().setNewFileInput({
+                          parentPath: "",
+                          isFolder: false,
+                        });
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>New File</span>
+                    </button>
+                    <button
+                      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[var(--ide-hover)]"
+                      onClick={() => {
+                        useTreeStructureStore.getState().setNewFileInput({
+                          parentPath: "",
+                          isFolder: true,
+                        });
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>New Folder</span>
+                    </button>
+                    <div className="h-px my-1" style={{ background: "var(--ide-border)" }} />
+                    <button
+                      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[var(--ide-hover)]"
+                      onClick={() => {
+                        const active = useActiveFileTabStore.getState().activeFileTab;
+                        const socket = useEditorSocketStore.getState().editorSocket;
+                        if (active && socket) {
+                          socket.emit("writeFile", {
+                            data: active.value,
+                            pathToFileFolder: active.path,
+                          });
+                          useActiveFileTabStore.getState().markDirty(active.path, false);
+                        }
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>Save File</span>
+                      <kbd className="text-[10px] opacity-60">Ctrl+S</kbd>
+                    </button>
+                    <button
+                      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[var(--ide-hover)]"
+                      onClick={() => {
+                        useEditorStatusStore.getState().toggleAutoSave();
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>Toggle Auto-Save</span>
+                      <span className="text-[10px] text-[var(--ide-accent)]">
+                        {useEditorStatusStore.getState().autoSave ? "ON" : "OFF"}
+                      </span>
+                    </button>
+                    <div className="h-px my-1" style={{ background: "var(--ide-border)" }} />
+                    <button
+                      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[var(--ide-hover)]"
+                      onClick={() => {
+                        useCommandPaletteStore.getState().open("file");
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>Quick Open...</span>
+                      <kbd className="text-[10px] opacity-60">Ctrl+P</kbd>
+                    </button>
+                  </>
+                )}
+
+                {item === "Edit" && (
+                  <>
+                    <button
+                      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[var(--ide-hover)]"
+                      onClick={() => {
+                        useCommandPaletteStore.getState().open("command");
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>Command Palette...</span>
+                      <kbd className="text-[10px] opacity-60">Ctrl+Shift+P</kbd>
+                    </button>
+                    <button
+                      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[var(--ide-hover)]"
+                      onClick={() => {
+                        useCommandPaletteStore.getState().open("goto-line");
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>Go to Line/Column...</span>
+                      <kbd className="text-[10px] opacity-60">Ctrl+G</kbd>
+                    </button>
+                  </>
+                )}
+
+                {item === "View" && (
+                  <>
+                    <button
+                      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[var(--ide-hover)]"
+                      onClick={() => {
+                        useCommandPaletteStore.getState().open("command");
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>Command Palette...</span>
+                      <kbd className="text-[10px] opacity-60">Ctrl+Shift+P</kbd>
+                    </button>
+                    <button
+                      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[var(--ide-hover)]"
+                      onClick={() => {
+                        toggleTheme();
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>Switch Theme</span>
+                      <span className="text-[10px] opacity-60 capitalize">
+                        {theme === "dark" ? "Light" : "Dark"}
+                      </span>
+                    </button>
+                  </>
+                )}
+
+                {item === "Terminal" && (
+                  <>
+                    <button
+                      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[var(--ide-hover)]"
+                      onClick={() => {
+                        useCommandPaletteStore.getState().open("command");
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>Terminal Commands</span>
+                    </button>
+                  </>
+                )}
+
+                {item === "Help" && (
+                  <>
+                    <button
+                      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[var(--ide-hover)]"
+                      onClick={() => {
+                        useCommandPaletteStore.getState().open("command");
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>Show All Commands</span>
+                      <kbd className="text-[10px] opacity-60">Ctrl+Shift+P</kbd>
+                    </button>
+                    <button
+                      className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[var(--ide-hover)]"
+                      onClick={() => {
+                        useCommandPaletteStore.getState().open("file");
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>Quick Open Files</span>
+                      <kbd className="text-[10px] opacity-60">Ctrl+P</kbd>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         ))}
       </nav>
 
@@ -117,7 +299,7 @@ export default function IdeTitleBar({ projectName }: IdeTitleBarProps) {
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="w-[28px] h-[28px] flex items-center justify-center rounded-lg transition-all"
+          className="w-[28px] h-[28px] flex items-center justify-center rounded-lg transition-all cursor-pointer"
           style={{ color: "var(--ide-text-muted)" }}
           title={theme === "dark" ? "Switch to Light" : "Switch to Dark"}
           onMouseEnter={(e) => {
@@ -143,7 +325,7 @@ export default function IdeTitleBar({ projectName }: IdeTitleBarProps) {
 
         {/* Notifications */}
         <button
-          className="w-[28px] h-[28px] flex items-center justify-center rounded-lg transition-all"
+          className="w-[28px] h-[28px] flex items-center justify-center rounded-lg transition-all cursor-pointer"
           style={{ color: "var(--ide-text-muted)" }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "var(--ide-hover)";
@@ -164,7 +346,7 @@ export default function IdeTitleBar({ projectName }: IdeTitleBarProps) {
 
         {/* Run Dev */}
         <button
-          className="flex items-center gap-1.5 px-3 h-[28px] rounded-lg text-[11px] font-semibold text-white transition-all run-btn-glow"
+          className="flex items-center gap-1.5 px-3 h-[28px] rounded-lg text-[11px] font-semibold text-white transition-all run-btn-glow cursor-pointer"
           style={{ background: "var(--ide-accent)" }}
           onClick={() => {
             if (activeView === "preview") {

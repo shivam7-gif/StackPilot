@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileIcon } from "../FileIcon/FileIcon";
 import { useActiveFileTabStore } from "../../store/activeFileTabStore";
 import { useEditorSocketStore } from "@/store/EditorSocketStores";
 import { useFileContextMenuStore } from "@/store/fileContextMenuStore";
+import { useTreeStructureStore } from "@/store/TreeStructureStore";
 
 interface TreeNode {
   name: string;
@@ -61,9 +62,12 @@ function FolderIcon({ open }: { open: boolean }) {
 }
 
 export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
-  const [expanded, setExpanded] = useState(depth < 2);
   const [hovered, setHovered] = useState(false);
   const renameInputRef = useRef<HTMLInputElement>(null);
+
+  const collapseAllVersion = useTreeStructureStore((s) => s.collapseAllVersion);
+  const expandedPaths = useTreeStructureStore((s) => s.expandedPaths);
+  const toggleFolder = useTreeStructureStore((s) => s.toggleFolder);
 
   const activeTabPath = useActiveFileTabStore((s) => s.activeTabPath);
   const openTab = useActiveFileTabStore((s) => s.openTab);
@@ -88,6 +92,12 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
   const isSelected = !isFolder && activeTabPath === resolvedNodePath;
   const isReactFile = extension === "tsx" || extension === "jsx";
   const isRenamingNode = renamingPath === resolvedNodePath;
+
+  const defaultExpanded = depth < 2;
+  const expanded =
+    collapseAllVersion > 0
+      ? (expandedPaths[resolvedNodePath] ?? false)
+      : (expandedPaths[resolvedNodePath] ?? defaultExpanded);
 
   const submitRename = () => {
     const trimmed = renameInputRef.current?.value.trim() ?? "";
@@ -120,7 +130,7 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
 
   const handleClick = () => {
     if (isFolder) {
-      setExpanded((prev) => !prev);
+      toggleFolder(resolvedNodePath, expanded);
     } else {
       // Optimistically open tab; socket will fill in value
       openTab(resolvedNodePath, "", extension, "text");
@@ -156,7 +166,8 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
             top: 0,
             bottom: 0,
             width: 1,
-            background: "rgba(255,255,255,0.05)",
+            background: "var(--ide-border)",
+            opacity: 0.6,
             pointerEvents: "none",
           }}
         />
@@ -167,7 +178,7 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
         onClick={handleClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="w-full flex items-center h-[22px] pr-1 text-left group relative"
+        className="w-full flex items-center h-[22px] pr-1 text-left group relative cursor-pointer select-none"
         style={{
           paddingLeft,
           background: isSelected
@@ -181,7 +192,7 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
         onContextMenu={(e) => handleContextMenu(e, resolvedNodePath)}
       >
         {/* Chevron / spacer */}
-        <span className="w-[14px] h-[14px] flex items-center justify-center shrink-0 mr-0.5">
+        <span className="w-[14px] h-[14px] flex items-center justify-center shrink-0 mr-0.5 cursor-pointer">
           {isFolder ? (
             <Chevron expanded={expanded} />
           ) : (
@@ -190,7 +201,7 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
         </span>
 
         {/* Icon */}
-        <span className="w-[16px] h-[16px] flex items-center justify-center shrink-0 mr-1.5">
+        <span className="w-[16px] h-[16px] flex items-center justify-center shrink-0 mr-1.5 cursor-pointer">
           {isFolder ? (
             <FolderIcon open={expanded} />
           ) : (
@@ -221,14 +232,14 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
             }}
             className="flex-1 min-w-0 h-[18px] px-1 text-[13px] rounded outline-none"
             style={{
-              background: "#3c3c3c",
-              border: "1px solid #007fd4",
-              color: "#cccccc",
+              background: "var(--ide-input-bg)",
+              border: "1px solid var(--ide-accent)",
+              color: "var(--ide-text)",
             }}
           />
         ) : (
           <span
-            className="text-[13px] truncate flex-1"
+            className="text-[13px] truncate flex-1 cursor-pointer"
             style={{
               color: isSelected ? "var(--ide-selected-text)" : isReactFile ? "var(--ide-react-color)" : "var(--ide-text)",
             }}
@@ -242,7 +253,16 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
           <span className="flex items-center gap-0.5 pr-1 shrink-0 animate-fade-in">
             <span
               title="Rename"
-              className="w-[16px] h-[16px] flex items-center justify-center rounded text-[#858585] hover:text-[#ccc] hover:bg-[#3a3a3a]"
+              className="w-[16px] h-[16px] flex items-center justify-center rounded transition-colors cursor-pointer"
+              style={{ color: "var(--ide-text-dim)" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--ide-hover)";
+                e.currentTarget.style.color = "var(--ide-text)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "var(--ide-text-dim)";
+              }}
               onClick={(e) => {
                 e.stopPropagation();
                 startRename(resolvedNodePath);
@@ -262,8 +282,23 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
             </span>
             <span
               title="Delete"
-              className="w-[16px] h-[16px] flex items-center justify-center rounded text-[#858585] hover:text-[#f48771] hover:bg-[#3a3a3a]"
-              onClick={(e) => e.stopPropagation()}
+              className="w-[16px] h-[16px] flex items-center justify-center rounded transition-colors cursor-pointer"
+              style={{ color: "var(--ide-text-dim)" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--ide-hover)";
+                e.currentTarget.style.color = "#ef4444";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "var(--ide-text-dim)";
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (editorSocket) {
+                  editorSocket.emit("deleteFile", { pathToFileFolder: resolvedNodePath });
+                  closeTab(resolvedNodePath);
+                }
+              }}
             >
               <svg
                 width="10"

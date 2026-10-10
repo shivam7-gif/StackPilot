@@ -37,6 +37,11 @@ export function acquireProjectWatcher(
   });
 
   watcher.on("all", (event, filePath) => {
+    // Only notify room of structural changes (file/dir added, removed)
+    // Content edits ("change") do not affect the tree structure
+    if (event === "change") {
+      return;
+    }
     editorNamespace.to(roomId).emit("fileSystemChanged", {
       event,
       path: filePath,

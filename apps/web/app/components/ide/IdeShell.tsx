@@ -15,6 +15,7 @@ import EditorArea from "./EditorArea";
 import ResizeHandle from "./ResizeHandle";
 import ChatPanel from "../ai/ChatPanel";
 import Terminal from "../Terminal/BrowserTerminal";
+import CommandPalette from "./CommandPalette";
 import { useParams } from "next/navigation";
 import { useTreeStructureStore } from "../../store/TreeStructureStore";
 
@@ -79,10 +80,22 @@ export default function IdeShell({ projectName }: IdeShellProps) {
     };
   }, [setEditorSocket, clearEditorSocket, projectIdFromUrl, setProjectId]);
 
+  // Theme sync
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    if (theme === "light") {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.add("light");
+    } else {
+      document.documentElement.classList.remove("light");
+      document.documentElement.classList.add("dark");
+    }
+  }, [theme]);
+
   return (
     <div
       data-theme={theme}
-      className="h-screen w-screen flex flex-col font-sans overflow-hidden"
+      className={`h-screen w-screen flex flex-col font-sans overflow-hidden ${theme === "light" ? "ide-light" : "ide-dark"}`}
       style={{ background: "var(--ide-bg)", color: "var(--ide-text)" }}
     >
       <IdeTitleBar projectName={projectName} />
@@ -177,6 +190,8 @@ export default function IdeShell({ projectName }: IdeShellProps) {
 
         <Terminal height={terminal.height} onResizeStart={terminal.startDrag} />
       </div>
+
+      <CommandPalette />
     </div>
   );
 }
