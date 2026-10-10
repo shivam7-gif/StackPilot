@@ -184,7 +184,10 @@ export default function ExplorerPanel({ width }: ExplorerPanelProps) {
             {/* Panel title bar */}
             <div
               className="h-[35px] flex items-center justify-between px-3 shrink-0"
-              style={{ borderBottom: "1px solid var(--ide-border)" }}
+              style={{
+                borderBottom: "1px solid var(--ide-border)",
+                background: "var(--ide-sidebar-bg)",
+              }}
               onMouseEnter={() => setHovering(true)}
               onMouseLeave={() => setHovering(false)}
             >
@@ -277,7 +280,10 @@ export default function ExplorerPanel({ width }: ExplorerPanelProps) {
             </div>
 
             {/* File tree */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden ide-scrollbar">
+            <div
+              className="flex-1 overflow-y-auto overflow-x-hidden ide-scrollbar"
+              style={{ background: "var(--ide-sidebar-bg)" }}
+            >
               <TreeStructure />
             </div>
           </>

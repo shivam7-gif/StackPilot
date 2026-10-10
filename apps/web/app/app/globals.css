@@ -17,8 +17,31 @@
 
 @layer base {
   :root {
-    --background: 10 10 10;
-    --foreground: 255 255 255;
+    --bg-editor:   #0e1012;
+    --bg-sidebar:  linear-gradient(180deg, #14171a 0%, #101214 100%);
+    --bg-chat:     linear-gradient(180deg, #121518 0%, #0e1012 100%);
+    --bg-terminal: #0a0c0d;
+    --border:      #22272b;
+    --text:        #d4d8dc;
+    --text-muted:  #7d868e;
+    --accent:      #2ea043;
+    --background: 14 16 18;
+    --foreground: 212 216 220;
+  }
+
+  [data-theme='light'],
+  html.light,
+  .light {
+    --bg-editor:   #ffffff;
+    --bg-sidebar:  #ffffff;
+    --bg-chat:     #ffffff;
+    --bg-terminal: #ffffff;
+    --border:      #e2e8f0;
+    --text:        #1e293b;
+    --text-muted:  #64748b;
+    --accent:      #2ea043;
+    --background: 255 255 255;
+    --foreground: 15 23 42;
   }
 
   * {
@@ -30,10 +53,19 @@
     color-scheme: dark;
   }
 
+  html.light {
+    color-scheme: light;
+  }
+
   body {
     background-color: #0a0a0a;
     color: #f3f4f6;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  html.light body {
+    background-color: #ffffff;
+    color: #0f172a;
   }
 }
 

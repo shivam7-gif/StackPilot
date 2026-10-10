@@ -346,8 +346,7 @@ export default function IdeTitleBar({ projectName }: IdeTitleBarProps) {
 
         {/* Run Dev */}
         <button
-          className="flex items-center gap-1.5 px-3 h-[28px] rounded-lg text-[11px] font-semibold text-white transition-all run-btn-glow cursor-pointer"
-          style={{ background: "var(--ide-accent)" }}
+          className="run-dev cursor-pointer"
           onClick={() => {
             if (activeView === "preview") {
               openEditor();
@@ -360,14 +359,8 @@ export default function IdeTitleBar({ projectName }: IdeTitleBarProps) {
               openPreview(url);
             }
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "var(--ide-accent-hover)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "var(--ide-accent)";
-          }}
         >
-          <svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
             <path d="M2 1.5v7l6.5-3.5L2 1.5z" />
           </svg>
           Run Dev

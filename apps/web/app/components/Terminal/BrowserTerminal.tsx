@@ -21,10 +21,10 @@ const TABS: { id: TerminalTab; label: string }[] = [
 ];
 
 const CURSOR_TERMINAL_THEME = {
-  background: "#1e1e1e",
-  foreground: "#cccccc",
-  cursor: "#aeafad",
-  cursorAccent: "#1e1e1e",
+  background: "#0a0c0d",
+  foreground: "#d4d8dc",
+  cursor: "#2ea043",
+  cursorAccent: "#0a0c0d",
   selectionBackground: "#264f78",
   black: "#000000",
   red: "#cd3131",
@@ -315,7 +315,7 @@ export default function BrowserTerminal({
       className="flex flex-col shrink-0"
       style={{
         height,
-        background: "var(--ide-bg)",
+        background: "var(--bg-terminal, var(--ide-terminal-bg, var(--ide-bg)))",
         borderTop: "1px solid var(--ide-border)",
       }}
     >

@@ -110,6 +110,10 @@ export const TreeStructure = () => {
   return (
     <div
       className="h-full flex flex-col select-none"
+      style={{
+        background: "var(--ide-sidebar-bg)",
+        color: "var(--ide-tree-text, var(--ide-text))",
+      }}
       onContextMenu={(e) => {
         if ((e.target as HTMLElement).closest(".group")) return;
         e.preventDefault();

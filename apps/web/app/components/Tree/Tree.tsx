@@ -26,8 +26,9 @@ function Chevron({ expanded }: { expanded: boolean }) {
       height="12"
       viewBox="0 0 16 16"
       fill="currentColor"
-      className="text-[#858585] shrink-0"
+      className="shrink-0"
       style={{
+        color: "var(--ide-text-dim)",
         transition: "transform 0.12s ease",
         transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
       }}
@@ -186,7 +187,7 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
             : hovered
               ? "var(--ide-hover)"
               : "transparent",
-          color: isSelected ? "var(--ide-selected-text)" : "var(--ide-text)",
+          color: isSelected ? "var(--ide-selected-text)" : "var(--ide-tree-text, var(--ide-text))",
           transition: "background 0.08s",
         }}
         onContextMenu={(e) => handleContextMenu(e, resolvedNodePath)}
@@ -241,7 +242,11 @@ export const Tree = ({ fileFolderData, depth = 0 }: TreeProps) => {
           <span
             className="text-[13px] truncate flex-1 cursor-pointer"
             style={{
-              color: isSelected ? "var(--ide-selected-text)" : isReactFile ? "var(--ide-react-color)" : "var(--ide-text)",
+              color: isSelected
+                ? "var(--ide-selected-text)"
+                : isReactFile
+                  ? "var(--ide-react-color)"
+                  : "var(--ide-tree-text, var(--ide-text))",
             }}
           >
             {fileFolderData.name}

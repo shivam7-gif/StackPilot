@@ -181,14 +181,18 @@ export default function ChatPanel({ width }: ChatPanelProps) {
       className="h-full shrink-0 overflow-hidden flex flex-col"
       style={{
         width,
-        background: "var(--ide-sidebar-bg)",
+        background: "var(--ide-chat-bg)",
         borderLeft: "1px solid var(--ide-border)",
       }}
     >
       {/* ── Tab bar ── */}
       <div
         className="flex items-center shrink-0 px-1"
-        style={{ height: 36, borderBottom: "1px solid var(--ide-border)" }}
+        style={{
+          height: 36,
+          borderBottom: "1px solid var(--ide-border)",
+          background: "var(--ide-chat-bg)",
+        }}
       >
         {TABS.map(({ id, label }) => (
           <button
@@ -236,7 +240,10 @@ export default function ChatPanel({ width }: ChatPanelProps) {
       {/* ── Header ── */}
       <div
         className="px-3 py-2.5 shrink-0"
-        style={{ borderBottom: "1px solid var(--ide-border)" }}
+        style={{
+          borderBottom: "1px solid var(--ide-border)",
+          background: "var(--ide-chat-bg)",
+        }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -295,21 +302,21 @@ export default function ChatPanel({ width }: ChatPanelProps) {
                 <button
                   key={s}
                   onClick={() => setInput(s)}
-                  className="text-left px-3 py-2 rounded-lg text-[11.5px] transition-all w-full"
+                  className="text-left px-3 py-2 rounded-lg text-[11.5px] transition-all w-full cursor-pointer"
                   style={{
                     background: "var(--ide-suggestion-bg)",
                     border: "1px solid var(--ide-suggestion-border)",
-                    color: "var(--ide-text-muted)",
+                    color: "var(--ide-text)",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "var(--ide-suggestion-hover)";
                     e.currentTarget.style.borderColor = "var(--ide-accent)";
-                    e.currentTarget.style.color = "var(--ide-text)";
+                    e.currentTarget.style.color = "var(--ide-text-bright)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "var(--ide-suggestion-bg)";
                     e.currentTarget.style.borderColor = "var(--ide-suggestion-border)";
-                    e.currentTarget.style.color = "var(--ide-text-muted)";
+                    e.currentTarget.style.color = "var(--ide-text)";
                   }}
                 >
                   {s}
@@ -331,7 +338,10 @@ export default function ChatPanel({ width }: ChatPanelProps) {
       {/* ── Input ── */}
       <div
         className="p-2.5 shrink-0"
-        style={{ borderTop: "1px solid var(--ide-border)" }}
+        style={{
+          borderTop: "1px solid var(--ide-border)",
+          background: "var(--ide-chat-bg)",
+        }}
       >
         <div
           className="rounded-xl overflow-hidden transition-all"
