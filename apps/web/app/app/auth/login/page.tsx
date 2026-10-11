@@ -10,7 +10,10 @@ export default function LoginPage() {
 
     function handleSubmit(e?: React.FormEvent) {
         e?.preventDefault();
-        transitionTo("/dashboard", "StackPilot");
+        transitionTo("/dashboard", {
+            variant: "authToDashboard",
+            text: "StackPilot",
+        });
     }
 
     return (
@@ -55,7 +58,8 @@ export default function LoginPage() {
                     />
                     <button
                         type="submit"
-                        className="mt-1 w-full rounded-full bg-black px-5 py-3 text-sm font-medium text-white transition hover:bg-teal-300"
+                        onClick={handleSubmit}
+                        className="mt-1 w-full rounded-full bg-black px-5 py-3 text-sm font-medium text-white transition hover:bg-teal-300 cursor-pointer"
                     >
                         Log in
                     </button>

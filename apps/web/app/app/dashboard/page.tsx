@@ -60,6 +60,7 @@ export default function DashboardPage() {
   const [overlayStep, setOverlayStep] = useState<OverlayStep>("idle");
   const router = useRouter();
 
+  const [prompt , setPrompt] = useState("");
   const [userName, setUserName] = useState<string>("Shivam Rawat");
   const [folderHovered, setFolderHovered] = useState(false);
   const [folderOpen, setFolderOpen] = useState(false);
@@ -72,10 +73,15 @@ export default function DashboardPage() {
   const [activeNav, setActiveNav] = useState("Chat");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const isHeadingPopped = folderHovered || headingHovered || folderOpen || chatMessages.length > 0;
-
+  const isHeadingPopped = folderHovered || headingHovered || folderOpen;
   const [busy, setBusy] = useState(false);
   const controller = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, aiTyping]);
 
   const ask = async ({
     text,
@@ -291,7 +297,10 @@ export default function DashboardPage() {
     {
       label: "Chat",
       ariaLabel: "Go to Chat",
-      onClick: () => setActiveNav("Chat"),
+      onClick: () => {
+        setActiveNav("Chat");
+        setChatMessages([]);
+      },
     },
     {
       label: "Projects",
@@ -365,7 +374,15 @@ export default function DashboardPage() {
             <span className="text-sm font-medium text-neutral-500">{activeNav}</span>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            {chatMessages.length > 0 && (
+              <button
+                onClick={() => setChatMessages([])}
+                className="flex items-center gap-1.5 px-3.5 h-9 rounded-full text-xs font-semibold border border-black/10 text-neutral-700 hover:text-black hover:bg-neutral-100 transition active:scale-[0.98]"
+              >
+                + New Chat
+              </button>
+            )}
             <button
               onClick={() => setShowModal(true)}
               className="flex items-center gap-1.5 px-4 h-9 rounded-full text-xs font-semibold bg-black text-white hover:bg-[#5227FF] transition active:scale-[0.98] shadow-sm"
@@ -379,106 +396,114 @@ export default function DashboardPage() {
         </header>
 
         {/* Center Canvas */}
-        <div className="flex-1 overflow-y-auto px-4 flex flex-col items-center justify-center relative pb-36 min-h-0">
-          <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
-            {/* Pop-out Heading: springs out when hovering on folder */}
-            <div
-              className="w-full min-h-[80px] flex flex-col items-center justify-center mb-24 select-none z-10"
-              onMouseEnter={() => setHeadingHovered(true)}
-              onMouseLeave={() => setHeadingHovered(false)}
-            >
+        <div
+          className={`flex-1 overflow-y-auto px-4 flex flex-col items-center relative pb-36 min-h-0 ${
+            chatMessages.length === 0 ? "justify-center" : "justify-start"
+          }`}
+        >
+          {chatMessages.length === 0 ? (
+            /* Welcome / Empty State: Pop-out Heading + 3D Interactive Folder */
+            <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center animate-in fade-in duration-300">
+              {/* Pop-out Heading: springs out when hovering on folder */}
               <div
-                className={`flex flex-col items-center text-center transition-all duration-500 transform ${
-                  isHeadingPopped
-                    ? "opacity-100 translate-y-0 scale-100 filter blur-0 pointer-events-auto"
-                    : "opacity-0 translate-y-6 scale-90 filter blur-[6px] pointer-events-none"
-                }`}
-                style={{
-                  transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
-                }}
+                className="w-full min-h-[80px] flex flex-col items-center justify-center mb-16 select-none z-10"
+                onMouseEnter={() => setHeadingHovered(true)}
+                onMouseLeave={() => setHeadingHovered(false)}
               >
-                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-neutral-900 drop-shadow-sm">
-                  What&apos;s on your mind today,{" "}
-                  <span className="text-[#5227FF]">
-                    {userName}
-                  </span>
-                  ?
-                </h1>
+                <div
+                  className={`flex flex-col items-center text-center transition-all duration-500 transform ${
+                    isHeadingPopped
+                      ? "opacity-100 translate-y-0 scale-100 filter blur-0 pointer-events-auto"
+                      : "opacity-0 translate-y-6 scale-90 filter blur-[6px] pointer-events-none"
+                  }`}
+                  style={{
+                    transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+                  }}
+                >
+                  <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-neutral-900 drop-shadow-sm">
+                    What&apos;s on your mind today,{" "}
+                    <span className="text-[#5227FF]">
+                      {userName}
+                    </span>
+                    ?
+                  </h1>
+                </div>
+              </div>
+
+              {/* Center Stage: Happening Animated 3D Interactive Folder with Auth Photos */}
+              <div className="w-full flex items-center justify-center my-4 py-2">
+                <Folder
+                  color="#5227FF"
+                  size={2}
+                  items={authPhotos}
+                  isOpen={folderOpen}
+                  onOpenChange={setFolderOpen}
+                  onHoverChange={setFolderHovered}
+                />
               </div>
             </div>
-
-            {/* Chat Messages (if active) */}
-            {chatMessages.length > 0 && (
-              <div className="w-full max-w-2xl mb-6 max-h-56 overflow-y-auto space-y-3 px-1">
-                {chatMessages.map((m, i) => (
-                  <div
-                    key={i}
-                    className={`flex gap-2.5 ${m.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    {m.role === "ai" && (
-                      <div className="w-6 h-6 rounded-full bg-[#5227FF] text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-1">
-                        SP
-                      </div>
-                    )}
-                    <div
-                      className={`text-[13px] px-4 py-2.5 max-w-[80%] leading-relaxed ${
-                        m.role === "user"
-                          ? "bg-black text-white rounded-2xl rounded-tr-sm"
-                          : "bg-neutral-100 text-black border border-black/5 rounded-2xl rounded-tl-sm"
-                      }`}
-                    >
-                      {m.text}
-                    </div>
-                  </div>
-                ))}
-
-                {aiTyping && (
-                  <div className="flex gap-2.5 items-center">
-                    <div className="w-6 h-6 rounded-full bg-[#5227FF] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+          ) : (
+            /* Active Conversation View: Welcome elements & folder disappear */
+            <div className="w-full max-w-3xl mx-auto flex flex-col space-y-4 py-8 px-2 animate-in fade-in duration-300">
+              {chatMessages.map((m, i) => (
+                <div
+                  key={i}
+                  className={`flex gap-3 ${
+                    m.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {m.role === "ai" && (
+                    <div className="w-7 h-7 rounded-full bg-[#5227FF] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-sm">
                       SP
                     </div>
-                    <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-neutral-100 text-neutral-500 text-xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#5227FF] animate-bounce" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#5227FF] animate-bounce [animation-delay:150ms]" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#5227FF] animate-bounce [animation-delay:300ms]" />
-                    </div>
+                  )}
+                  <div
+                    className={`text-[13.5px] px-4 py-3 max-w-[85%] leading-relaxed shadow-sm ${
+                      m.role === "user"
+                        ? "bg-black text-white rounded-2xl rounded-tr-sm"
+                        : "bg-neutral-50 text-neutral-900 border border-black/5 rounded-2xl rounded-tl-sm"
+                    }`}
+                  >
+                    {m.text}
                   </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-            )}
+                </div>
+              ))}
 
-            {/* Center Stage: Happening Animated 3D Interactive Folder with Auth Photos */}
-            <div className="w-full flex items-center justify-center my-6 py-4">
-              <Folder
-                color="#5227FF"
-                size={2}
-                items={authPhotos}
-                isOpen={folderOpen}
-                onOpenChange={setFolderOpen}
-                onHoverChange={setFolderHovered}
-              />
+              {aiTyping && (
+                <div className="flex gap-3 items-center">
+                  <div className="w-7 h-7 rounded-full bg-[#5227FF] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">
+                    SP
+                  </div>
+                  <div className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-neutral-50 border border-black/5 text-neutral-500 text-xs shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-[#5227FF] animate-bounce" />
+                    <span className="w-2 h-2 rounded-full bg-[#5227FF] animate-bounce [animation-delay:150ms]" />
+                    <span className="w-2 h-2 rounded-full bg-[#5227FF] animate-bounce [animation-delay:300ms]" />
+                  </div>
+                </div>
+              )}
+
+              {/* Build Log Card if building */}
+              {overlayStep !== "idle" && (
+                <div className="w-full mt-4 rounded-2xl p-4 bg-neutral-900 text-white border border-neutral-800 shadow-lg">
+                  <div className="flex items-center gap-2 mb-2 text-xs font-medium">
+                    {overlayStep !== "done" ? <Spinner /> : <span className="text-green-400">✓</span>}
+                    <span>
+                      {overlayStep === "creating" && "Creating project structure..."}
+                      {overlayStep === "logs" && "Scaffolding dependencies..."}
+                      {overlayStep === "done" && "Project ready! Redirecting..."}
+                    </span>
+                  </div>
+                  <div className="space-y-0.5 max-h-48 overflow-y-auto text-xs font-mono">
+                    {logs.map((log, i) => (
+                      <LogLine key={i} text={log} i={i} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div ref={chatEndRef} className="h-4" />
             </div>
-
-            {/* Build Log Card if building */}
-            {overlayStep !== "idle" && (
-              <div className="w-full max-w-2xl mt-6 rounded-2xl p-4 bg-neutral-900 text-white border border-neutral-800 shadow-md">
-                <div className="flex items-center gap-2 mb-2 text-xs font-medium">
-                  {overlayStep !== "done" ? <Spinner /> : <span className="text-green-400">✓</span>}
-                  <span>
-                    {overlayStep === "creating" && "Creating project structure..."}
-                    {overlayStep === "logs" && "Scaffolding dependencies..."}
-                    {overlayStep === "done" && "Project ready! Redirecting..."}
-                  </span>
-                </div>
-                <div className="space-y-0.5 max-h-36 overflow-y-auto text-xs font-mono">
-                  {logs.map((log, i) => (
-                    <LogLine key={i} text={log} i={i} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Docked Prompt Bar with Margin from Bottom */}

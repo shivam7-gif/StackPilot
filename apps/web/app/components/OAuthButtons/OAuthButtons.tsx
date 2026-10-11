@@ -4,12 +4,22 @@ import { useFormStatus } from "react-dom";
 import { signInWithProvider, type OAuthProvider } from "@/lib/actions/auth";
 
 const buttonClass =
-    "flex w-full items-center justify-center gap-3 rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-medium text-ink transition hover:bg-black/[0.03] disabled:cursor-progress disabled:opacity-60";
+    "flex w-full items-center justify-center gap-3 rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-medium text-ink transition hover:bg-black/[0.03] disabled:cursor-progress disabled:opacity-60 cursor-pointer";
 
-function ProviderButton({ icon, label }: { icon: React.ReactNode; label: string }) {
+function ProviderButton({
+    icon,
+    label,
+}: {
+    icon: React.ReactNode;
+    label: string;
+}) {
     const { pending } = useFormStatus();
     return (
-        <button type="submit" disabled={pending} className={buttonClass}>
+        <button
+            type="submit"
+            disabled={pending}
+            className={buttonClass}
+        >
             {icon}
             {pending ? "Redirecting…" : label}
         </button>
@@ -26,7 +36,10 @@ export default function OAuthButtons() {
         <div className="flex flex-col gap-3">
             {providers.map((p) => (
                 <form key={p.id} action={signInWithProvider.bind(null, p.id)}>
-                    <ProviderButton icon={p.icon} label={p.label} />
+                    <ProviderButton
+                        icon={p.icon}
+                        label={p.label}
+                    />
                 </form>
             ))}
         </div>

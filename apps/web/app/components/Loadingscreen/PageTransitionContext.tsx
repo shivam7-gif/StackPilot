@@ -12,10 +12,19 @@ import React, {
 import { useRouter, usePathname } from "next/navigation";
 import Link, { LinkProps } from "next/link";
 import LoadingScreen from "./Loading";
+import AuthToDashboardLoader from "@/components/LoadingBar/AuthToDashboardLoader";
+
+export type TransitionOptions =
+  | string
+  | {
+      text?: string;
+      variant?: "default" | "authToDashboard";
+      duration?: number;
+    };
 
 interface PageTransitionContextType {
-  /** Trigger smooth transition to a target URL with optional loading label */
-  transitionTo: (url: string, text?: string) => void;
+  /** Trigger smooth transition to a target URL with optional loading label or options */
+  transitionTo: (url: string, options?: TransitionOptions) => void;
   /** Whether the transition is currently active */
   isTransitioning: boolean;
 }
@@ -46,10 +55,14 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
 
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionText, setTransitionText] = useState("StackPilot");
+  const [transitionDuration, setTransitionDuration] = useState(1600);
+  const [transitionVariant, setTransitionVariant] = useState<
+    "default" | "authToDashboard"
+  >("default");
   const targetUrlRef = useRef<string | null>(null);
 
   const transitionTo = useCallback(
-    (url: string, text = "StackPilot") => {
+    (url: string, options?: TransitionOptions) => {
       // Rule: Do NOT show loading animation when navigating to or inside projects
       if (isProjectRoute(url) || isProjectRoute(pathname)) {
         router.push(url);
@@ -59,10 +72,31 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
       // If already on the same page, do nothing
       if (pathname === url) return;
 
+      // Extract options
+      const text =
+        typeof options === "string" ? options : options?.text || "StackPilot";
+      const customDuration =
+        typeof options === "object" ? options?.duration : undefined;
+
+      // Detect if this is an auth to dashboard routing transition
+      const isAuthRoute = pathname?.startsWith("/auth");
+      const isDashboardTarget = url === "/dashboard" || url.startsWith("/dashboard");
+      const requestedVariant =
+        typeof options === "object" ? options?.variant : undefined;
+
+      const variant: "default" | "authToDashboard" =
+        requestedVariant ||
+        (isAuthRoute && isDashboardTarget) ||
+        isDashboardTarget
+          ? "authToDashboard"
+          : "default";
+
       // Start prefetching the target route immediately for zero-lag mounting
       router.prefetch(url);
       targetUrlRef.current = url;
       setTransitionText(text);
+      setTransitionVariant(variant);
+      setTransitionDuration(customDuration || (variant === "authToDashboard" ? 1800 : 1400));
       setIsTransitioning(true);
     },
     [pathname, router]
@@ -71,32 +105,46 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
   const handleExitStart = useCallback(() => {
     if (targetUrlRef.current) {
       router.push(targetUrlRef.current);
-      targetUrlRef.current = null;
     }
   }, [router]);
 
   const handleComplete = useCallback(() => {
     setIsTransitioning(false);
+    targetUrlRef.current = null;
   }, []);
 
-  // Safety: If pathname changes to a project route, immediately cancel transition
+  // Safety: If pathname changes to a project route or reaches target, finish transition
   useEffect(() => {
     if (isProjectRoute(pathname)) {
       setIsTransitioning(false);
       targetUrlRef.current = null;
+    } else if (targetUrlRef.current && pathname === targetUrlRef.current) {
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+        targetUrlRef.current = null;
+      }, 200);
+      return () => clearTimeout(timer);
     }
   }, [pathname]);
 
   return (
     <PageTransitionContext.Provider value={{ transitionTo, isTransitioning }}>
-      {isTransitioning && (
-        <LoadingScreen
-          text={transitionText}
-          duration={1400}
-          onExitStart={handleExitStart}
-          onComplete={handleComplete}
-        />
-      )}
+      {isTransitioning &&
+        (transitionVariant === "authToDashboard" ? (
+          <AuthToDashboardLoader
+            text={transitionText}
+            duration={transitionDuration}
+            onExitStart={handleExitStart}
+            onComplete={handleComplete}
+          />
+        ) : (
+          <LoadingScreen
+            text={transitionText}
+            duration={transitionDuration}
+            onExitStart={handleExitStart}
+            onComplete={handleComplete}
+          />
+        ))}
       {children}
     </PageTransitionContext.Provider>
   );
