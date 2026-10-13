@@ -82,5 +82,64 @@
     "frontend": "react",
     "backend": "express",
     "createdAt": "2026-09-15T19:25:27.440Z"
+  },
+  {
+    "projectId": "42bbe1d2-e6f5-43a4-8f20-f6f36222427a",
+    "projectName": "test-app",
+    "baseName": "test-app",
+    "folderName": "42bbe1d2-e6f5-43a4-8f20-f6f36222427a",
+    "createdAt": "2026-10-13T10:59:16.845Z"
+  },
+  {
+    "projectId": "7111201e-f4f1-4b2d-90a3-9b150e0a555d",
+    "projectName": "stackpilot-app",
+    "baseName": "stackpilot-app",
+    "folderName": "7111201e-f4f1-4b2d-90a3-9b150e0a555d",
+    "frontend": "react",
+    "backend": "express",
+    "createdAt": "2026-10-13T11:04:36.067Z"
+  },
+  {
+    "projectId": "8d97a3e1-d722-4a39-a12f-ed98d9ecb443",
+    "projectName": "stackpilot-app",
+    "baseName": "stackpilot-app",
+    "folderName": "8d97a3e1-d722-4a39-a12f-ed98d9ecb443",
+    "createdAt": "2026-10-13T11:04:41.888Z"
+  },
+  {
+    "projectId": "b099c784-12ac-4407-b0eb-274e858cc277",
+    "projectName": "web-application",
+    "baseName": "web-application",
+    "folderName": "b099c784-12ac-4407-b0eb-274e858cc277",
+    "frontend": "react",
+    "backend": "nestjs",
+    "createdAt": "2026-10-13T11:11:38.665Z"
+  },
+  {
+    "projectId": "6136dd45-a417-403a-a268-a885f925278e",
+    "projectName": "web-application",
+    "baseName": "web-application",
+    "folderName": "6136dd45-a417-403a-a268-a885f925278e",
+    "frontend": "react",
+    "backend": "nestjs",
+    "createdAt": "2026-10-13T11:11:42.985Z"
+  },
+  {
+    "projectId": "f8977a09-18df-4628-a66e-013475094a77",
+    "projectName": "web-application",
+    "baseName": "web-application",
+    "folderName": "f8977a09-18df-4628-a66e-013475094a77",
+    "frontend": "react",
+    "backend": "nestjs",
+    "createdAt": "2026-10-13T11:32:54.370Z"
+  },
+  {
+    "projectId": "cf6669c5-71f3-447d-b015-62bbb0523c07",
+    "projectName": "work",
+    "baseName": "work",
+    "folderName": "cf6669c5-71f3-447d-b015-62bbb0523c07",
+    "frontend": "react",
+    "backend": "express",
+    "createdAt": "2026-10-13T11:34:22.188Z"
   }
 ]

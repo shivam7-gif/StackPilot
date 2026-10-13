@@ -19,3 +19,24 @@ export const getProjectTree = async ({ projectId }: { projectId: string }) => {
     throw error;
   }
 };
+
+export interface ScaffoldAiProjectPayload {
+  prompt?: string;
+  projectName?: string;
+  files?: Array<{ path: string; code?: string; action?: string; purpose?: string }>;
+  frontend?: string;
+  backend?: string;
+  model?: string;
+  effort?: string;
+}
+
+export const scaffoldAiProjectApi = async (payload: ScaffoldAiProjectPayload) => {
+  try {
+    const response = await axios.post("/projects/scaffold-ai", payload);
+    return response.data;
+  } catch (error) {
+    console.error("Error scaffolding AI project:", error);
+    throw error;
+  }
+};
+

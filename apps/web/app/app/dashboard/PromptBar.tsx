@@ -1,8 +1,22 @@
-'use client';
+"use client";
 
-import { isValidElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, ReactNode } from 'react';
-import { animate, useMotionValue, useMotionValueEvent, useReducedMotion } from 'motion/react';
-import { HugeiconsIcon } from '@hugeicons/react';
+import {
+  isValidElement,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  ReactNode,
+} from "react";
+import {
+  animate,
+  useMotionValue,
+  useMotionValueEvent,
+  useReducedMotion,
+} from "motion/react";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowDown01Icon,
   Attachment01Icon,
@@ -16,9 +30,9 @@ import {
   Mic01Icon,
   PlusSignIcon,
   SparklesIcon,
-  Tick02Icon
-} from '@hugeicons/core-free-icons';
-import './PromptBar.css';
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
+import "./PromptBar.css";
 
 export interface SourceItem {
   key: string;
@@ -45,9 +59,10 @@ export interface ModelItem {
   provider?: string;
 }
 
-export const getModelKey = (m?: ModelItem) => (m ? (m.key || m.value || '') : '');
-export const getModelName = (m?: ModelItem) => (m ? (m.name || m.label || '') : '');
-export const getModelTag = (m?: ModelItem) => (m ? (m.tag || m.badge || '') : '');
+export const getModelKey = (m?: ModelItem) => (m ? m.key || m.value || "" : "");
+export const getModelName = (m?: ModelItem) =>
+  m ? m.name || m.label || "" : "";
+export const getModelTag = (m?: ModelItem) => (m ? m.tag || m.badge || "" : "");
 
 export interface SendPayload {
   attachments: string[];
@@ -67,7 +82,11 @@ export interface PromptBarProps {
   busy?: boolean;
   onSend?: (text: string, payload: SendPayload) => void;
   onStop?: () => void;
-  onAttach?: () => Promise<string | string[] | undefined> | string | string[] | void;
+  onAttach?: () =>
+    | Promise<string | string[] | undefined>
+    | string
+    | string[]
+    | void;
   onDictate?: () => Promise<string | undefined> | string | void;
   background?: string;
   color?: string;
@@ -84,7 +103,9 @@ export interface PromptBarProps {
   className?: string;
 }
 
-const ARROW_UP = [12, 4.5, 18.5, 11, 14.25, 11, 14.25, 19.5, 9.75, 19.5, 9.75, 11, 5.5, 11];
+const ARROW_UP = [
+  12, 4.5, 18.5, 11, 14.25, 11, 14.25, 19.5, 9.75, 19.5, 9.75, 11, 5.5, 11,
+];
 const SQUARE = [12, 6, 18, 6, 18, 12, 18, 18, 6, 18, 6, 12, 6, 6];
 const EASE_IN_OUT = [0.77, 0, 0.175, 1];
 const LINE = 22;
@@ -92,48 +113,113 @@ const EDGE = 11;
 
 const DEFAULT_SOURCES: SourceItem[] = [
   {
-    key: 'files',
-    name: 'Photos & files',
-    description: 'Upload from this device',
+    key: "files",
+    name: "Photos & files",
+    description: "Upload from this device",
     icon: Attachment01Icon,
-    attach: true
+    attach: true,
   },
-  { key: 'web', name: 'Web search', description: 'Live results', icon: Globe02Icon },
-  { key: 'sales', name: 'Sales data', description: 'Revenue and churn', icon: ChartLineData01Icon },
-  { key: 'docs', name: 'Documents', description: 'Specs, notes, briefs', icon: File02Icon },
-  { key: 'mail', name: 'Mail', description: 'Read and draft mail', icon: Mail01Icon },
-  { key: 'calendar', name: 'Calendar', description: 'Events and availability', icon: Calendar03Icon }
+  {
+    key: "web",
+    name: "Web search",
+    description: "Live results",
+    icon: Globe02Icon,
+  },
+  {
+    key: "sales",
+    name: "Sales data",
+    description: "Revenue and churn",
+    icon: ChartLineData01Icon,
+  },
+  {
+    key: "docs",
+    name: "Documents",
+    description: "Specs, notes, briefs",
+    icon: File02Icon,
+  },
+  {
+    key: "mail",
+    name: "Mail",
+    description: "Read and draft mail",
+    icon: Mail01Icon,
+  },
+  {
+    key: "calendar",
+    name: "Calendar",
+    description: "Events and availability",
+    icon: Calendar03Icon,
+  },
 ];
 
 const DEFAULT_COMMANDS: CommandItem[] = [
-  { key: 'summarize', name: '/summarize', description: 'Digest the thread so far' },
-  { key: 'compare', name: '/compare', description: 'Two options side by side' },
-  { key: 'draft', name: '/draft', description: 'Write a first version' },
-  { key: 'explain', name: '/explain', description: 'A plain-language walkthrough' },
-  { key: 'tasks', name: '/tasks', description: 'Turn this into a to-do list' }
+  {
+    key: "summarize",
+    name: "/summarize",
+    description: "Digest the thread so far",
+  },
+  { key: "compare", name: "/compare", description: "Two options side by side" },
+  { key: "draft", name: "/draft", description: "Write a first version" },
+  {
+    key: "explain",
+    name: "/explain",
+    description: "A plain-language walkthrough",
+  },
+  { key: "tasks", name: "/tasks", description: "Turn this into a to-do list" },
 ];
 
 const DEFAULT_MODELS: ModelItem[] = [
-  { value: 'openrouter/free', label: 'Auto (Free Router)', badge: 'Auto' },
-  { value: 'nvidia/nemotron-3.5-lightning:free', label: 'Nemotron 3.5 Lightning', badge: 'Long context' },
-  { value: 'thinkingmachines/inkling:free', label: 'Inkling', badge: 'Multimodal' },
-  { value: 'qwen/qwen3.8-27b:free', label: 'Qwen 3.8 27B', badge: 'Vision' },
-  { value: 'nvidia/nemotron-3-super-120b-a12b:free', label: 'Nemotron 3 Super 120B', badge: 'Reasoning' },
-  { value: 'cohere/north-mini-code:free', label: 'North Mini Code', badge: 'Coding' },
-  { value: 'poolside/laguna-s-2.1:free', label: 'Laguna S 2.1', badge: 'Coding' },
-  { value: 'poolside/laguna-xs-2.1:free', label: 'Laguna XS 2.1', badge: 'Fast' },
-  { value: 'apodex/apodex-1.1-mini:free', label: 'Apodex 1.1 Mini', badge: 'Fast' },
-  { value: 'inclusionai/ling-3.0-flash-sante:free', label: 'Ling 3.0 Flash', badge: 'Fast' },
-  { value: 'liquid/lfm-2.5-2.6b:free', label: 'LFM 2.5 2.6B', badge: 'Tiny' }
+  { value: "openrouter/free", label: "Auto (Free Router)", badge: "Auto" },
+  {
+    value: "nvidia/nemotron-3.5-lightning:free",
+    label: "Nemotron 3.5 Lightning",
+    badge: "Long context",
+  },
+  {
+    value: "thinkingmachines/inkling:free",
+    label: "Inkling",
+    badge: "Multimodal",
+  },
+  { value: "qwen/qwen3.8-27b:free", label: "Qwen 3.8 27B", badge: "Vision" },
+  {
+    value: "nvidia/nemotron-3-super-120b-a12b:free",
+    label: "Nemotron 3 Super 120B",
+    badge: "Reasoning",
+  },
+  {
+    value: "cohere/north-mini-code:free",
+    label: "North Mini Code",
+    badge: "Coding",
+  },
+  {
+    value: "poolside/laguna-s-2.1:free",
+    label: "Laguna S 2.1",
+    badge: "Coding",
+  },
+  {
+    value: "poolside/laguna-xs-2.1:free",
+    label: "Laguna XS 2.1",
+    badge: "Fast",
+  },
+  {
+    value: "apodex/apodex-1.1-mini:free",
+    label: "Apodex 1.1 Mini",
+    badge: "Fast",
+  },
+  {
+    value: "inclusionai/ling-3.0-flash-sante:free",
+    label: "Ling 3.0 Flash",
+    badge: "Fast",
+  },
+  { value: "liquid/lfm-2.5-2.6b:free", label: "LFM 2.5 2.6B", badge: "Tiny" },
 ];
 
-const DEFAULT_EFFORTS = ['Low', 'Medium', 'High', 'Extra', 'Max'];
+const DEFAULT_EFFORTS = ["Low", "Medium", "High", "Extra", "Max"];
 
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 const pathAt = (a: number[], b: number[], t: number) => {
-  let d = '';
+  let d = "";
   for (let i = 0; i < a.length; i += 2) {
-    d += `${i ? 'L' : 'M'}${mix(a[i], b[i], t).toFixed(2)} ${mix(a[i + 1], b[i + 1], t).toFixed(2)}`;
+    d += `${i ? "L" : "M"}${mix(a[i], b[i], t).toFixed(2)} ${mix(a[i + 1], b[i + 1], t).toFixed(2)}`;
   }
   return `${d}Z`;
 };
@@ -141,17 +227,25 @@ const pathAt = (a: number[], b: number[], t: number) => {
 const parseToken = (draft: string) => {
   const m = /(^|\s)([@/])([\w-]*)$/.exec(draft);
   if (!m) return null;
-  return { kind: m[2] === '@' ? 'at' : 'slash', query: m[3].toLowerCase(), start: m.index + m[1].length };
+  return {
+    kind: m[2] === "@" ? "at" : "slash",
+    query: m[3].toLowerCase(),
+    start: m.index + m[1].length,
+  };
 };
 
 const renderIcon = (icon: any, size: number) =>
-  isValidElement(icon) ? icon : <HugeiconsIcon icon={icon} size={size} strokeWidth={1.8} />;
+  isValidElement(icon) ? (
+    icon
+  ) : (
+    <HugeiconsIcon icon={icon} size={size} strokeWidth={1.8} />
+  );
 
 function SendGlyph({
   busy,
   morphDuration,
   squash,
-  tilt
+  tilt,
 }: {
   busy: boolean;
   morphDuration: number;
@@ -171,17 +265,21 @@ function SendGlyph({
     const controls = (animate as any)(
       t,
       target,
-      reduce ? { duration: 0 } : { duration: morphDuration / 1000, ease: EASE_IN_OUT }
+      reduce
+        ? { duration: 0 }
+        : { duration: morphDuration / 1000, ease: EASE_IN_OUT }
     );
     return () => controls.stop();
   }, [busy, morphDuration, reduce, t]);
 
-  useMotionValueEvent(t, 'change', v => {
-    pathRef.current?.setAttribute('d', pathAt(ARROW_UP, SQUARE, v));
+  useMotionValueEvent(t, "change", (v) => {
+    pathRef.current?.setAttribute("d", pathAt(ARROW_UP, SQUARE, v));
     const goo = reduce ? 0 : Math.sin(v * Math.PI);
     const sx = 1 - squash * goo;
     if (svgRef.current) {
-      svgRef.current.style.transform = goo ? `rotate(${dir.current * tilt * goo}deg) scale(${sx}, ${1 / sx})` : '';
+      svgRef.current.style.transform = goo
+        ? `rotate(${dir.current * tilt * goo}deg) scale(${sx}, ${1 / sx})`
+        : "";
     }
   });
 
@@ -202,23 +300,23 @@ function SendGlyph({
 }
 
 export default function PromptBar({
-  placeholder = 'Ask anything',
+  placeholder = "Ask anything",
   sources = DEFAULT_SOURCES,
   commands = DEFAULT_COMMANDS,
   models = DEFAULT_MODELS,
-  defaultModel = '',
+  defaultModel = "",
   efforts = DEFAULT_EFFORTS,
-  defaultEffort = '',
+  defaultEffort = "",
   onEffortChange,
   busy = false,
   onSend,
   onStop,
   onAttach,
   onDictate,
-  background = '#27272a',
-  color = '#f5f5f5',
-  menuBackground = '#323236',
-  sparkColor = '#b39dff',
+  background = "#27272a",
+  color = "#f5f5f5",
+  menuBackground = "#323236",
+  sparkColor = "#b39dff",
   sparkBoost = 1,
   width = 400,
   radius = 16,
@@ -227,7 +325,7 @@ export default function PromptBar({
   squash = 0.12,
   tilt = 8,
   pressScale = 0.96,
-  className = ''
+  className = "",
 }: PromptBarProps) {
   const reduce = useReducedMotion();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -243,15 +341,21 @@ export default function PromptBar({
   const latest = useRef<{
     onSend?: (text: string, payload: SendPayload) => void;
     onStop?: () => void;
-    onAttach?: () => Promise<string | string[] | undefined> | string | string[] | void;
+    onAttach?: () =>
+      | Promise<string | string[] | undefined>
+      | string
+      | string[]
+      | void;
     onDictate?: () => Promise<string | undefined> | string | void;
     onEffortChange?: (effort: string) => void;
   }>({});
   latest.current = { onSend, onStop, onAttach, onDictate, onEffortChange };
 
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
-  const [modelKey, setModelKey] = useState(() => defaultModel || getModelKey(models[0]));
+  const [modelKey, setModelKey] = useState(
+    () => defaultModel || getModelKey(models[0])
+  );
   const [plusOpen, setPlusOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [effortOpen, setEffortOpen] = useState(false);
@@ -264,20 +368,26 @@ export default function PromptBar({
   const [listening, setListening] = useState(false);
   const [pressed, setPressed] = useState(false);
 
-  const model = models.find(m => getModelKey(m) === modelKey) ?? models[0];
+  const model = models.find((m) => getModelKey(m) === modelKey) ?? models[0];
   const token = dismissed ? null : parseToken(draft);
-  const open = plusOpen ? 'at' : (token?.kind ?? (modelOpen ? 'model' : effortOpen ? 'effort' : null));
-  const query = plusOpen ? '' : (token?.query ?? '');
+  const open = plusOpen
+    ? "at"
+    : (token?.kind ?? (modelOpen ? "model" : effortOpen ? "effort" : null));
+  const query = plusOpen ? "" : (token?.query ?? "");
   const list = useMemo(() => {
-    if (open === 'at') return sources.filter(s => s.name.toLowerCase().includes(query));
-    if (open === 'slash') return commands.filter(c => c.name.replace(/^\//, '').toLowerCase().startsWith(query));
-    if (open === 'model') return models;
+    if (open === "at")
+      return sources.filter((s) => s.name.toLowerCase().includes(query));
+    if (open === "slash")
+      return commands.filter((c) =>
+        c.name.replace(/^\//, "").toLowerCase().startsWith(query)
+      );
+    if (open === "model") return models;
     return [];
   }, [open, query, sources, commands, models]);
   const cursor = Math.min(active, Math.max(0, list.length - 1));
   const canSend = draft.trim().length > 0 || attachments.length > 0;
   const armed = busy || canSend;
-  const level = efforts[effortIndex] ?? '';
+  const level = efforts[effortIndex] ?? "";
   const maxed = efforts.length > 1 && effortIndex === efforts.length - 1;
 
   const focusInput = () => inputRef.current?.focus({ preventScroll: true });
@@ -292,18 +402,18 @@ export default function PromptBar({
     if (!glow || !open) return;
     const row = rowRefs.current[cursor];
     if (!row) {
-      glow.style.opacity = '0';
+      glow.style.opacity = "0";
       return;
     }
     const fresh = lastOpen.current !== open;
     lastOpen.current = open;
-    if (fresh) glow.style.transition = 'none';
+    if (fresh) glow.style.transition = "none";
     glow.style.top = `${row.offsetTop}px`;
     glow.style.height = `${row.offsetHeight}px`;
-    glow.style.opacity = '1';
+    glow.style.opacity = "1";
     if (fresh) {
       void glow.offsetHeight;
-      glow.style.transition = '';
+      glow.style.transition = "";
     }
   }, [open, cursor, list]);
   useEffect(() => {
@@ -315,17 +425,17 @@ export default function PromptBar({
     const onDown = (e: PointerEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) closeMenus();
     };
-    document.addEventListener('pointerdown', onDown);
-    return () => document.removeEventListener('pointerdown', onDown);
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
   }, [plusOpen, modelOpen, effortOpen, closeMenus]);
 
   useLayoutEffect(() => {
     const el = inputRef.current;
     if (!el) return;
-    el.style.height = '0px';
+    el.style.height = "0px";
     const max = LINE * maxRows;
     el.style.height = `${Math.min(el.scrollHeight, max)}px`;
-    el.style.overflowY = el.scrollHeight > max ? 'auto' : 'hidden';
+    el.style.overflowY = el.scrollHeight > max ? "auto" : "hidden";
   }, [draft, maxRows]);
 
   useEffect(
@@ -338,7 +448,7 @@ export default function PromptBar({
   useEffect(() => {
     const canvas = sparkRef.current;
     if (!maxed || reduce || !canvas) return undefined;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return undefined;
     typing.current.strokes = 0;
     let raf = 0;
@@ -376,7 +486,7 @@ export default function PromptBar({
         sway: (Math.random() - 0.5) * 10,
         phase: Math.random() * Math.PI * 2,
         life: burst ? Math.random() * 1.2 : 0,
-        span: 2.4 + Math.random() * 2.4
+        span: 2.4 + Math.random() * 2.4,
       });
     };
     const tick = (now: number) => {
@@ -409,14 +519,21 @@ export default function PromptBar({
           continue;
         }
         const k = p.life / p.span;
-        const twinkle = 0.7 + 0.3 * Math.sin((now / 160) * (1 + energy) + p.phase);
+        const twinkle =
+          0.7 + 0.3 * Math.sin((now / 160) * (1 + energy) + p.phase);
         p.y += p.vy * dt * speed;
         if (p.y < -4) {
           p.y = h + 3;
           p.x = Math.random() * w;
         }
-        const edge = Math.min(1, Math.max(0, p.y / 14), Math.max(0, (h - p.y) / 14));
-        ctx.globalAlpha = Math.min(1, Math.sin(k * Math.PI) * (0.9 + energy * 0.25) * twinkle) * edge;
+        const edge = Math.min(
+          1,
+          Math.max(0, p.y / 14),
+          Math.max(0, (h - p.y) / 14)
+        );
+        ctx.globalAlpha =
+          Math.min(1, Math.sin(k * Math.PI) * (0.9 + energy * 0.25) * twinkle) *
+          edge;
         ctx.beginPath();
         ctx.arc(
           p.x + Math.sin((now / 900) * (1 + energy * 0.8) + p.phase) * p.sway,
@@ -449,31 +566,38 @@ export default function PromptBar({
   };
   const effortFromPointer = (e: React.PointerEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const k = (e.clientX - rect.left - EDGE) / Math.max(1, rect.width - 2 * EDGE);
+    const k =
+      (e.clientX - rect.left - EDGE) / Math.max(1, rect.width - 2 * EDGE);
     setEffort(Math.round(k * (efforts.length - 1)));
   };
   const onEffortKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const step =
-      e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 0;
+      e.key === "ArrowRight" || e.key === "ArrowUp"
+        ? 1
+        : e.key === "ArrowLeft" || e.key === "ArrowDown"
+          ? -1
+          : 0;
     if (step) {
       e.preventDefault();
       setEffort(effortIndex + step);
-    } else if (e.key === 'Home') {
+    } else if (e.key === "Home") {
       e.preventDefault();
       setEffort(0);
-    } else if (e.key === 'End') {
+    } else if (e.key === "End") {
       e.preventDefault();
       setEffort(efforts.length - 1);
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       setEffortOpen(false);
       focusInput();
     }
   };
-  const stepAt = (i: number) => `calc(${EDGE}px + (100% - ${EDGE * 2}px) * ${i / Math.max(1, efforts.length - 1)})`;
-  const fillAt = (i: number) => (i === efforts.length - 1 ? '100%' : `calc(${stepAt(i)} + 7px)`);
+  const stepAt = (i: number) =>
+    `calc(${EDGE}px + (100% - ${EDGE * 2}px) * ${i / Math.max(1, efforts.length - 1)})`;
+  const fillAt = (i: number) =>
+    i === efforts.length - 1 ? "100%" : `calc(${stepAt(i)} + 7px)`;
 
   const pick = (row: any) => {
-    if (open === 'model') {
+    if (open === "model") {
       setModelKey(getModelKey(row));
       setModelOpen(false);
       focusInput();
@@ -482,11 +606,14 @@ export default function PromptBar({
     const head = token ? draft.slice(0, token.start) : draft;
     if (row.attach) {
       setDraft(head);
-      Promise.resolve(latest.current.onAttach?.()).then(files => {
+      Promise.resolve(latest.current.onAttach?.()).then((files) => {
         if (!files) return;
-        setAttachments(a => [...a, ...(Array.isArray(files) ? files : [files])]);
+        setAttachments((a) => [
+          ...a,
+          ...(Array.isArray(files) ? files : [files]),
+        ]);
       });
-    } else if (open === 'at') {
+    } else if (open === "at") {
       setDraft(`${head}@${row.name} `);
     } else {
       setDraft(`${head}${row.name} `);
@@ -498,8 +625,12 @@ export default function PromptBar({
 
   const send = () => {
     if (!canSend || busy) return;
-    latest.current.onSend?.(draft.trim(), { attachments, model, effort: level });
-    setDraft('');
+    latest.current.onSend?.(draft.trim(), {
+      attachments,
+      model,
+      effort: level,
+    });
+    setDraft("");
     setAttachments([]);
     setDismissed(false);
     closeMenus();
@@ -515,10 +646,10 @@ export default function PromptBar({
     const seq = ++dictation.current;
     setListening(true);
     Promise.resolve(latest.current.onDictate?.()).then(
-      text => {
+      (text) => {
         if (seq !== dictation.current) return;
         setListening(false);
-        if (text) setDraft(d => (d.trim() ? `${d.trimEnd()} ${text}` : text));
+        if (text) setDraft((d) => (d.trim() ? `${d.trimEnd()} ${text}` : text));
         focusInput();
       },
       () => {
@@ -529,18 +660,20 @@ export default function PromptBar({
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (open && list.length) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault();
-        setActive((cursor + (e.key === 'ArrowDown' ? 1 : list.length - 1)) % list.length);
+        setActive(
+          (cursor + (e.key === "ArrowDown" ? 1 : list.length - 1)) % list.length
+        );
         return;
       }
-      if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
+      if ((e.key === "Enter" && !e.shiftKey) || e.key === "Tab") {
         e.preventDefault();
         pick(list[cursor]);
         return;
       }
     }
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       if (open) {
         e.preventDefault();
         setDismissed(true);
@@ -548,7 +681,7 @@ export default function PromptBar({
       }
       return;
     }
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       send();
     }
@@ -561,39 +694,52 @@ export default function PromptBar({
   const up = () => setPressed(false);
 
   const customStyle: React.CSSProperties = {
-    ['--pb-bg' as any]: background,
-    ['--pb-ink' as any]: color,
-    ['--pb-menu' as any]: menuBackground,
-    ['--pb-w' as any]: typeof width === 'number' ? `${width}px` : width,
-    ['--pb-radius' as any]: `${radius}px`,
-    ['--pb-spark' as any]: sparkColor,
-    ['--pb-press' as any]: pressScale
+    ["--pb-bg" as any]: background,
+    ["--pb-ink" as any]: color,
+    ["--pb-menu" as any]: menuBackground,
+    ["--pb-w" as any]: typeof width === "number" ? `${width}px` : width,
+    ["--pb-radius" as any]: `${radius}px`,
+    ["--pb-spark" as any]: sparkColor,
+    ["--pb-press" as any]: pressScale,
   };
 
   return (
     <div
       ref={rootRef}
-      className={`prompt-bar${className ? ` ${className}` : ''}`}
-      data-busy={busy ? '' : undefined}
-      data-max={maxed ? '' : undefined}
+      className={`prompt-bar${className ? ` ${className}` : ""}`}
+      data-busy={busy ? "" : undefined}
+      data-max={maxed ? "" : undefined}
       style={customStyle}
     >
       {open ? (
         <div
           className="prompt-bar__menu"
-          role={open === 'effort' ? 'dialog' : 'listbox'}
+          role={open === "effort" ? "dialog" : "listbox"}
           aria-label={
-            open === 'at' ? 'Sources' : open === 'slash' ? 'Commands' : open === 'model' ? 'Models' : 'Effort'
+            open === "at"
+              ? "Sources"
+              : open === "slash"
+                ? "Commands"
+                : open === "model"
+                  ? "Models"
+                  : "Effort"
           }
           data-kind={open}
         >
-          {open === 'effort' ? (
+          {open === "effort" ? (
             <>
               <div className="prompt-bar__effort-head">
                 <span className="prompt-bar__effort-title">Effort</span>
                 <span className="prompt-bar__effort-level">{level}</span>
-                <span className="prompt-bar__effort-help" title="Higher effort thinks longer before answering">
-                  <HugeiconsIcon icon={HelpCircleIcon} size={14} strokeWidth={1.8} />
+                <span
+                  className="prompt-bar__effort-help"
+                  title="Higher effort thinks longer before answering"
+                >
+                  <HugeiconsIcon
+                    icon={HelpCircleIcon}
+                    size={14}
+                    strokeWidth={1.8}
+                  />
                 </span>
               </div>
               <div className="prompt-bar__effort-ends">
@@ -610,10 +756,10 @@ export default function PromptBar({
                 aria-valuenow={effortIndex}
                 aria-valuetext={level}
                 style={{
-                  ['--pb-effort-x' as any]: stepAt(effortIndex),
-                  ['--pb-effort-fill' as any]: fillAt(effortIndex)
+                  ["--pb-effort-x" as any]: stepAt(effortIndex),
+                  ["--pb-effort-fill" as any]: fillAt(effortIndex),
                 }}
-                onPointerDown={e => {
+                onPointerDown={(e) => {
                   if (e.button !== 0) return;
                   try {
                     e.currentTarget.setPointerCapture(e.pointerId);
@@ -621,49 +767,86 @@ export default function PromptBar({
                   e.currentTarget.focus({ preventScroll: true });
                   effortFromPointer(e);
                 }}
-                onPointerMove={e => {
+                onPointerMove={(e) => {
                   if (e.buttons & 1) effortFromPointer(e);
                 }}
                 onKeyDown={onEffortKey}
               >
                 <span className="prompt-bar__effort-fill" />
                 {efforts.map((label, i) => (
-                  <i key={label} className="prompt-bar__effort-dot" style={{ left: stepAt(i) }} />
+                  <i
+                    key={label}
+                    className="prompt-bar__effort-dot"
+                    style={{ left: stepAt(i) }}
+                  />
                 ))}
                 <span className="prompt-bar__effort-thumb" />
               </div>
             </>
           ) : (
             <>
-              <span ref={glowRef} className="prompt-bar__glow" aria-hidden="true" />
+              <span
+                ref={glowRef}
+                className="prompt-bar__glow"
+                aria-hidden="true"
+              />
               {list.map((row: any, i: number) => (
                 <button
                   key={getModelKey(row) || row.key || i}
-                  ref={el => {
+                  ref={(el) => {
                     rowRefs.current[i] = el;
                   }}
                   type="button"
                   role="option"
                   aria-selected={i === cursor}
                   className="prompt-bar__row"
-                  onMouseDown={e => e.preventDefault()}
+                  onMouseDown={(e) => e.preventDefault()}
                   onPointerEnter={() => setActive(i)}
                   onClick={() => pick(row)}
                 >
-                  {open === 'at' ? <span className="prompt-bar__row-icon">{renderIcon(row.icon, 15)}</span> : null}
-                  <span className="prompt-bar__row-name">{open === 'model' ? getModelName(row) : row.name}</span>
-                  {row.description ? <span className="prompt-bar__row-desc">{row.description}</span> : null}
-                  {open === 'model' ? (
+                  {open === "at" ? (
+                    <span className="prompt-bar__row-icon">
+                      {renderIcon(row.icon, 15)}
+                    </span>
+                  ) : null}
+                  <span className="prompt-bar__row-name">
+                    {open === "model" ? getModelName(row) : row.name}
+                  </span>
+                  {row.description ? (
+                    <span className="prompt-bar__row-desc">
+                      {row.description}
+                    </span>
+                  ) : null}
+                  {open === "model" ? (
                     <>
-                      {getModelTag(row) ? <span className="prompt-bar__row-tag">{getModelTag(row)}</span> : null}
-                      <span className="prompt-bar__row-check" data-on={getModelKey(row) === getModelKey(model) ? '' : undefined}>
-                        <HugeiconsIcon icon={Tick02Icon} size={13} strokeWidth={2.5} />
+                      {getModelTag(row) ? (
+                        <span className="prompt-bar__row-tag">
+                          {getModelTag(row)}
+                        </span>
+                      ) : null}
+                      <span
+                        className="prompt-bar__row-check"
+                        data-on={
+                          getModelKey(row) === getModelKey(model)
+                            ? ""
+                            : undefined
+                        }
+                      >
+                        <HugeiconsIcon
+                          icon={Tick02Icon}
+                          size={13}
+                          strokeWidth={2.5}
+                        />
                       </span>
                     </>
                   ) : null}
                 </button>
               ))}
-              {list.length === 0 ? <div className="prompt-bar__empty">No matches for “{query}”</div> : null}
+              {list.length === 0 ? (
+                <div className="prompt-bar__empty">
+                  No matches for “{query}”
+                </div>
+              ) : null}
             </>
           )}
         </div>
@@ -672,13 +855,18 @@ export default function PromptBar({
       <div
         className="prompt-bar__field"
         role="presentation"
-        data-max={maxed ? '' : undefined}
-        onPointerDown={e => {
-          if (e.target === e.currentTarget || e.target === inputRef.current) closeMenus();
+        data-max={maxed ? "" : undefined}
+        onPointerDown={(e) => {
+          if (e.target === e.currentTarget || e.target === inputRef.current)
+            closeMenus();
         }}
         onClick={focusInput}
       >
-        <canvas ref={sparkRef} className="prompt-bar__sparks" aria-hidden="true" />
+        <canvas
+          ref={sparkRef}
+          className="prompt-bar__sparks"
+          aria-hidden="true"
+        />
         {attachments.length > 0 ? (
           <div className="prompt-bar__chips">
             {attachments.map((file, i) => (
@@ -689,9 +877,15 @@ export default function PromptBar({
                   type="button"
                   className="prompt-bar__chip-x"
                   aria-label={`Remove ${file}`}
-                  onClick={() => setAttachments(a => a.filter((_, j) => j !== i))}
+                  onClick={() =>
+                    setAttachments((a) => a.filter((_, j) => j !== i))
+                  }
                 >
-                  <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2.5} />
+                  <HugeiconsIcon
+                    icon={Cancel01Icon}
+                    size={10}
+                    strokeWidth={2.5}
+                  />
                 </button>
               </span>
             ))}
@@ -703,9 +897,9 @@ export default function PromptBar({
           className="prompt-bar__input"
           rows={1}
           value={draft}
-          placeholder={listening ? 'Listening…' : placeholder}
+          placeholder={listening ? "Listening…" : placeholder}
           aria-label="Prompt"
-          onChange={e => {
+          onChange={(e) => {
             setDraft(e.target.value);
             typing.current.energy = Math.min(1.6, typing.current.energy + 0.22);
             typing.current.strokes = Math.min(4, typing.current.strokes + 1);
@@ -723,13 +917,13 @@ export default function PromptBar({
             className="prompt-bar__tool"
             aria-label="Add files and sources"
             aria-expanded={plusOpen}
-            data-on={plusOpen ? '' : undefined}
-            onMouseDown={e => e.preventDefault()}
+            data-on={plusOpen ? "" : undefined}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
               setModelOpen(false);
               setEffortOpen(false);
               setActive(0);
-              setPlusOpen(v => !v);
+              setPlusOpen((v) => !v);
               focusInput();
             }}
           >
@@ -741,18 +935,29 @@ export default function PromptBar({
               className="prompt-bar__pick"
               aria-label="Choose model"
               aria-expanded={modelOpen}
-              data-on={modelOpen ? '' : undefined}
-              onMouseDown={e => e.preventDefault()}
+              data-on={modelOpen ? "" : undefined}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 setPlusOpen(false);
                 setEffortOpen(false);
-                setActive(Math.max(0, models.findIndex(m => getModelKey(m) === getModelKey(model))));
-                setModelOpen(v => !v);
+                setActive(
+                  Math.max(
+                    0,
+                    models.findIndex(
+                      (m) => getModelKey(m) === getModelKey(model)
+                    )
+                  )
+                );
+                setModelOpen((v) => !v);
                 focusInput();
               }}
             >
               <span>{getModelName(model)}</span>
-              <HugeiconsIcon icon={ArrowDown01Icon} size={12} strokeWidth={2.4} />
+              <HugeiconsIcon
+                icon={ArrowDown01Icon}
+                size={12}
+                strokeWidth={2.4}
+              />
             </button>
           ) : null}
           {efforts.length > 0 ? (
@@ -761,13 +966,13 @@ export default function PromptBar({
               className="prompt-bar__pick"
               aria-label="Choose effort"
               aria-expanded={effortOpen}
-              data-on={effortOpen ? '' : undefined}
-              data-max={maxed ? '' : undefined}
-              onMouseDown={e => e.preventDefault()}
+              data-on={effortOpen ? "" : undefined}
+              data-max={maxed ? "" : undefined}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 setPlusOpen(false);
                 setModelOpen(false);
-                setEffortOpen(v => !v);
+                setEffortOpen((v) => !v);
                 focusInput();
               }}
             >
@@ -780,10 +985,10 @@ export default function PromptBar({
             <button
               type="button"
               className="prompt-bar__tool"
-              aria-label={listening ? 'Stop dictation' : 'Dictate'}
+              aria-label={listening ? "Stop dictation" : "Dictate"}
               aria-pressed={listening}
-              data-on={listening ? '' : undefined}
-              onMouseDown={e => e.preventDefault()}
+              data-on={listening ? "" : undefined}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={toggleListen}
             >
               {listening ? (
@@ -801,10 +1006,10 @@ export default function PromptBar({
             type="button"
             className="prompt-bar__send"
             disabled={!armed}
-            aria-label={busy ? 'Stop' : 'Send'}
-            data-armed={armed ? '' : undefined}
-            data-pressed={pressed ? '' : undefined}
-            onMouseDown={e => e.preventDefault()}
+            aria-label={busy ? "Stop" : "Send"}
+            data-armed={armed ? "" : undefined}
+            data-pressed={pressed ? "" : undefined}
+            onMouseDown={(e) => e.preventDefault()}
             onPointerDown={down}
             onPointerUp={up}
             onPointerCancel={up}
@@ -814,7 +1019,12 @@ export default function PromptBar({
               else send();
             }}
           >
-            <SendGlyph busy={busy} morphDuration={morphDuration} squash={squash} tilt={tilt} />
+            <SendGlyph
+              busy={busy}
+              morphDuration={morphDuration}
+              squash={squash}
+              tilt={tilt}
+            />
           </button>
         </div>
       </div>

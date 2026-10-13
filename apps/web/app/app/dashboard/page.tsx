@@ -8,6 +8,9 @@ import PromptBar from "./PromptBar";
 import StaggeredMenu from "./StaggeredMenu";
 import Folder from "./Folder";
 import catalog from "./openrouter-free-models.json";
+import { useAiEngine } from "@/hooks/useAiEngine";
+import { checkHealth, AI_BACKEND_URL } from "@/config/aiApi";
+import { scaffoldAiProjectApi } from "@/apis/project";
 
 const modelOptions = catalog.models.map((m) => ({
   value: m.id,
@@ -60,68 +63,87 @@ export default function DashboardPage() {
   const [overlayStep, setOverlayStep] = useState<OverlayStep>("idle");
   const router = useRouter();
 
-  const [prompt , setPrompt] = useState("");
+  const [prompt, setPrompt] = useState("");
   const [userName, setUserName] = useState<string>("Shivam Rawat");
   const [folderHovered, setFolderHovered] = useState(false);
   const [folderOpen, setFolderOpen] = useState(false);
   const [headingHovered, setHeadingHovered] = useState(false);
-  const [chatMessages, setChatMessages] = useState<
-    { role: "user" | "ai"; text: string }[]
-  >([]);
-  const [aiTyping, setAiTyping] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [activeNav, setActiveNav] = useState("Chat");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const isHeadingPopped = folderHovered || headingHovered || folderOpen;
-  const [busy, setBusy] = useState(false);
   const controller = useRef<AbortController | null>(null);
+  const lastPromptRef = useRef<string>("");
+
+  // ── AI Engine HTTP API hook ──────────────────────────────────────────────
+  const ai = useAiEngine({
+    stream: true,
+    onResult: async (data) => {
+      try {
+        setOverlayStep("creating");
+        const frontendFw = data.architecture?.frontend?.framework;
+        const backendFw = data.architecture?.backend?.framework;
+
+        setLogs((prev) => [
+          ...prev,
+          `📦 Scaffolding project: ${data.projectName}`,
+          `⚙️ Architecture detected: Frontend=${frontendFw || "None"}, Backend=${backendFw || "None"}`,
+          `📁 Writing ${data.files.length} AI files to disk...`,
+        ]);
+        setOverlayStep("logs");
+
+        const scaffoldRes = await scaffoldAiProjectApi({
+          projectName: data.projectName,
+          files: data.files,
+          frontend: frontendFw,
+          backend: backendFw,
+          prompt: lastPromptRef.current,
+        });
+
+        if (scaffoldRes?.projectId) {
+          setOverlayStep("done");
+          setLogs((prev) => [
+            ...prev,
+            `✓ Project scaffolded successfully! (ID: ${scaffoldRes.projectId})`,
+            `🚀 Redirecting to IDE...`,
+          ]);
+          setTimeout(() => {
+            router.push(`/project/${scaffoldRes.projectId}`);
+          }, 1200);
+        }
+      } catch (err: any) {
+        console.error("Auto-scaffold error:", err);
+        setLogs((prev) => [
+          ...prev,
+          `❌ Scaffold error: ${err?.message || String(err)}`,
+        ]);
+      }
+    },
+  });
+
+  // Track AI backend health
+  const [aiBackendOnline, setAiBackendOnline] = useState<boolean | null>(null);
+  useEffect(() => {
+    checkHealth().then(setAiBackendOnline);
+    const interval = setInterval(() => {
+      checkHealth().then(setAiBackendOnline);
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Alias from the hook for backward compatibility
+  const chatMessages = ai.messages;
+  const aiTyping = ai.aiTyping;
+  const busy = ai.busy;
 
   useEffect(() => {
-    if (chatMessages.length > 0) {
+    if (ai.messages.length > 0) {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [chatMessages, aiTyping]);
+  }, [ai.messages, ai.aiTyping]);
 
-  const ask = async ({
-    text,
-    attachments,
-    model,
-    effort,
-    signal,
-  }: {
-    text: string;
-    attachments?: string[];
-    model?: string;
-    effort?: string;
-    signal?: AbortSignal;
-  }) => {
-    setChatMessages((p) => [...p, { role: "user", text }]);
-    setAiTyping(true);
-    setChatMessages((p) => [
-      ...p,
-      {
-        role: "ai",
-        text: `Processing request with ${model || "Nova 3"} (${effort || "Medium"} effort)...`,
-      },
-    ]);
-
-    socket.emit("engine:run", {
-      prompt: text,
-      model,
-      effort,
-      attachments,
-    });
-
-    if (signal) {
-      signal.addEventListener("abort", () => {
-        socket.emit("engine:stop");
-        setAiTyping(false);
-        setBusy(false);
-      });
-    }
-  };
-
+  // ── Send prompt via HTTP API to AiBackend ──────────────────────────────
   const send = async (
     text: string,
     {
@@ -134,17 +156,16 @@ export default function DashboardPage() {
       effort: string;
     }
   ) => {
-    setBusy(true);
-    controller.current = new AbortController();
+    lastPromptRef.current = text;
     const modelId = model.value || model.key || catalog.defaultModelId;
-    await ask({
-      text,
-      attachments,
+
+    // Use the AI engine HTTP API (SSE streaming)
+    await ai.send({
+      prompt: text,
       model: modelId,
       effort,
-      signal: controller.current.signal,
-    }).catch(() => {});
-    setBusy(false);
+      attachments,
+    });
   };
 
   const pickFiles = (): Promise<string[]> => {
@@ -200,10 +221,16 @@ export default function DashboardPage() {
           // Display the user's full name without truncating
           setUserName(data.user.name.trim());
         } else if (data?.user?.email) {
-          if (data.user.email.includes("shivamsrawat7") || data.user.email.toLowerCase().includes("rawat")) {
+          if (
+            data.user.email.includes("shivamsrawat7") ||
+            data.user.email.toLowerCase().includes("rawat")
+          ) {
             setUserName("Shivam Rawat");
           } else {
-            const emailParts = data.user.email.split("@")[0].replace(/[0-9_.-]/g, " ").trim();
+            const emailParts = data.user.email
+              .split("@")[0]
+              .replace(/[0-9_.-]/g, " ")
+              .trim();
             const formatted = emailParts
               ? emailParts
                   .split(" ")
@@ -244,26 +271,14 @@ export default function DashboardPage() {
       setTimeout(() => router.push(`/project/${projectId}`), 1000);
     });
     socket.on("engine-output", (payload: unknown) => {
+      console.log("[PromptBar] Backend prompt response:", payload);
       const text = String(payload ?? "").replace(/\r/g, "");
       const lines = text.split(/\n/).filter(Boolean);
       if (lines.length === 0) return;
       setLogs((prev) => [...prev, ...lines]);
-      setChatMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "ai") {
-          return [
-            ...prev.slice(0, -1),
-            { ...last, text: `${last.text}\n${lines.join("\n")}` },
-          ];
-        }
-        return [...prev, { role: "ai", text: lines.join("\n") }];
-      });
     });
-    socket.on("engine-status", (status: { status?: string }) => {
-      if (status?.status === "complete" || status?.status === "error") {
-        setAiTyping(false);
-        setBusy(false);
-      }
+    socket.on("engine-status", (_status: { status?: string }) => {
+      // Status lifecycle managed by useAiEngine
     });
 
     return () => {
@@ -288,10 +303,10 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    if (chatMessages.length > 0) {
+    if (ai.messages.length > 0) {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [chatMessages, aiTyping]);
+  }, [ai.messages, ai.aiTyping]);
 
   const menuItems = [
     {
@@ -299,7 +314,7 @@ export default function DashboardPage() {
       ariaLabel: "Go to Chat",
       onClick: () => {
         setActiveNav("Chat");
-        setChatMessages([]);
+        ai.clear();
       },
     },
     {
@@ -369,25 +384,62 @@ export default function DashboardPage() {
         {/* Top bar */}
         <header className="flex items-center justify-between px-6 h-14 shrink-0 border-b border-black/10 bg-white z-20">
           <div className="flex items-center gap-3 pl-24 md:pl-28">
-            <span className="text-sm font-semibold tracking-tight text-neutral-800">StackPilot</span>
+            <span className="text-sm font-semibold tracking-tight text-neutral-800">
+              StackPilot
+            </span>
             <span className="text-neutral-300">/</span>
-            <span className="text-sm font-medium text-neutral-500">{activeNav}</span>
+            <span className="text-sm font-medium text-neutral-500">
+              {activeNav}
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
             {chatMessages.length > 0 && (
               <button
-                onClick={() => setChatMessages([])}
+                onClick={() => ai.clear()}
                 className="flex items-center gap-1.5 px-3.5 h-9 rounded-full text-xs font-semibold border border-black/10 text-neutral-700 hover:text-black hover:bg-neutral-100 transition active:scale-[0.98]"
               >
                 + New Chat
               </button>
             )}
+            {/* AI Backend status indicator */}
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-[10px] font-medium border transition ${
+                aiBackendOnline === true
+                  ? "border-green-200 text-green-700 bg-green-50"
+                  : aiBackendOnline === false
+                    ? "border-red-200 text-red-600 bg-red-50"
+                    : "border-neutral-200 text-neutral-400 bg-neutral-50"
+              }`}
+              title={`AI Backend: ${AI_BACKEND_URL}`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  aiBackendOnline === true
+                    ? "bg-green-500"
+                    : aiBackendOnline === false
+                      ? "bg-red-500"
+                      : "bg-neutral-400"
+                }`}
+              />
+              {aiBackendOnline === true
+                ? "AI Online"
+                : aiBackendOnline === false
+                  ? "AI Offline"
+                  : "Checking…"}
+            </span>
             <button
               onClick={() => setShowModal(true)}
               className="flex items-center gap-1.5 px-4 h-9 rounded-full text-xs font-semibold bg-black text-white hover:bg-[#5227FF] transition active:scale-[0.98] shadow-sm"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
                 <path d="M12 5v14M5 12h14" />
               </svg>
               New Project
@@ -417,15 +469,13 @@ export default function DashboardPage() {
                       : "opacity-0 translate-y-6 scale-90 filter blur-[6px] pointer-events-none"
                   }`}
                   style={{
-                    transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    transitionTimingFunction:
+                      "cubic-bezier(0.34, 1.56, 0.64, 1)",
                   }}
                 >
                   <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-neutral-900 drop-shadow-sm">
                     What&apos;s on your mind today,{" "}
-                    <span className="text-[#5227FF]">
-                      {userName}
-                    </span>
-                    ?
+                    <span className="text-[#5227FF]">{userName}</span>?
                   </h1>
                 </div>
               </div>
@@ -486,11 +536,17 @@ export default function DashboardPage() {
               {overlayStep !== "idle" && (
                 <div className="w-full mt-4 rounded-2xl p-4 bg-neutral-900 text-white border border-neutral-800 shadow-lg">
                   <div className="flex items-center gap-2 mb-2 text-xs font-medium">
-                    {overlayStep !== "done" ? <Spinner /> : <span className="text-green-400">✓</span>}
+                    {overlayStep !== "done" ? (
+                      <Spinner />
+                    ) : (
+                      <span className="text-green-400">✓</span>
+                    )}
                     <span>
-                      {overlayStep === "creating" && "Creating project structure..."}
+                      {overlayStep === "creating" &&
+                        "Creating project structure..."}
                       {overlayStep === "logs" && "Scaffolding dependencies..."}
-                      {overlayStep === "done" && "Project ready! Redirecting..."}
+                      {overlayStep === "done" &&
+                        "Project ready! Redirecting..."}
                     </span>
                   </div>
                   <div className="space-y-0.5 max-h-48 overflow-y-auto text-xs font-mono">
@@ -512,19 +568,35 @@ export default function DashboardPage() {
             <PromptBar
               placeholder="Ask anything or describe what to build..."
               sources={[
-                { key: 'files', name: 'Photos & files', description: 'Upload from this device', icon: Attachment01Icon, attach: true },
-                { key: 'web', name: 'Web search', description: 'Live results', icon: Globe02Icon }
+                {
+                  key: "files",
+                  name: "Photos & files",
+                  description: "Upload from this device",
+                  icon: Attachment01Icon,
+                  attach: true,
+                },
+                {
+                  key: "web",
+                  name: "Web search",
+                  description: "Live results",
+                  icon: Globe02Icon,
+                },
               ]}
-              commands={[{ key: 'summarize', name: '/summarize', description: 'Digest the thread so far' }]}
+              commands={[
+                {
+                  key: "summarize",
+                  name: "/summarize",
+                  description: "Digest the thread so far",
+                },
+              ]}
               models={modelOptions}
               defaultModel={catalog.defaultModelId}
-              efforts={['Low', 'Medium', 'High', 'Extra', 'Max']}
+              efforts={["Low", "Medium", "High", "Extra", "Max"]}
               busy={busy}
               onSend={send}
               onStop={() => {
+                ai.stop();
                 controller.current?.abort();
-                setBusy(false);
-                setAiTyping(false);
               }}
               onAttach={() => pickFiles()}
               onDictate={() => transcribe()}
@@ -557,7 +629,9 @@ export default function DashboardPage() {
           >
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-lg font-bold text-black">Create New Project</h2>
+                <h2 className="text-lg font-bold text-black">
+                  Create New Project
+                </h2>
                 <p className="text-xs text-neutral-500 mt-0.5">
                   StackPilot will scaffold it for you
                 </p>

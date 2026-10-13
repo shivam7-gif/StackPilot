@@ -87,23 +87,50 @@ const runEngineWithSocket = async (
   // ── Parse the STACKPILOT_RESULT and write files ──────────────────
   let generatedFiles: { path: string; code: string }[] = [];
   let projectName = "stackpilot-project";
+  let architecture: any = null;
 
   if (resultLine) {
     try {
       const parsed = JSON.parse(resultLine);
       generatedFiles = parsed.files ?? [];
       projectName = parsed.projectName ?? projectName;
+      architecture = parsed.architecture ?? null;
     } catch {
-      socket.emit("engine-output", "\n[stackpilot-ai] Could not parse engine result JSON.\n");
+      socket.emit(
+        "engine-output",
+        "\n[stackpilot-ai] Could not parse engine result JSON.\n"
+      );
     }
   }
 
   // Create project folder and write files
   const projectId = crypto.randomUUID();
+  const baseName =
+    projectName.replace(/[^a-z0-9-]/gi, "-").toLowerCase() ||
+    "stackpilot-project";
   const projectDir = path.join(PROJECTS_DIR, projectId);
   await fs.mkdir(projectDir, { recursive: true });
 
-  socket.emit("engine-output", `\n[stackpilot-ai] Writing ${generatedFiles.length} files...\n`);
+  const architectDir = path.join(projectDir, `${baseName}-architect`);
+  const aiEngineDir = path.join(projectDir, `${baseName}-ai-engine`);
+  await Promise.all([
+    fs.mkdir(architectDir, { recursive: true }),
+    fs.mkdir(aiEngineDir, { recursive: true }),
+  ]);
+
+  const architectMd = `# System Architecture Blueprint\n\nProject: **${projectName}**\n\n## Blueprint\n\`\`\`json\n${JSON.stringify(architecture || {}, null, 2)}\n\`\`\`\n`;
+  const aiEngineMd = `# StackPilot AI Pipeline Blueprint\n\nSession completed: ${new Date().toISOString()}\n\nGenerated files: ${generatedFiles.length}\n`;
+
+  await Promise.all([
+    fs.writeFile(path.join(architectDir, "ARCHITECTURE.md"), architectMd, "utf8"),
+    fs.writeFile(path.join(architectDir, "architecture.json"), JSON.stringify(architecture || {}, null, 2), "utf8"),
+    fs.writeFile(path.join(aiEngineDir, "PIPELINE.md"), aiEngineMd, "utf8"),
+  ]);
+
+  socket.emit(
+    "engine-output",
+    `\n[stackpilot-ai] Writing ${generatedFiles.length} files...\n`
+  );
 
   await Promise.all(
     generatedFiles.map(async (file) => {
@@ -116,14 +143,56 @@ const runEngineWithSocket = async (
     })
   );
 
+  // Normalize and scaffold frameworks if detected
+  const fwClean = (fw: string | undefined): Framework | undefined => {
+    if (!fw || typeof fw !== "string") return undefined;
+    const clean = fw.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (clean.includes("react")) return "react";
+    if (clean.includes("next")) return "nextjs";
+    if (clean.includes("vue")) return "vue";
+    if (clean.includes("nuxt")) return "nuxt";
+    if (clean.includes("angular")) return "angular";
+    if (clean.includes("svelte")) return "svelte";
+    if (clean.includes("astro")) return "astro";
+    if (clean.includes("spring")) return "springboot";
+    if (clean.includes("express")) return "express";
+    if (clean.includes("nest")) return "nestjs";
+    if (clean.includes("django")) return "django";
+    if (clean.includes("laravel")) return "laravel";
+    return undefined;
+  };
+
+  const resolvedFrontend = fwClean(architecture?.frontend?.framework);
+  const resolvedBackend = fwClean(architecture?.backend?.framework);
+
+  if (resolvedFrontend) {
+    socket.emit("engine-output", `\n[stackpilot-ai] Scaffolding frontend: ${resolvedFrontend}...\n`);
+    try {
+      const { command } = getScaffoldCommand(resolvedFrontend, `${baseName}-frontend`);
+      await runSpawn(command, projectDir, socket, "Frontend");
+    } catch (e: any) {
+      socket.emit("engine-output", `⚠️ Frontend scaffold: ${e.message}\n`);
+    }
+  }
+
+  if (resolvedBackend) {
+    socket.emit("engine-output", `\n[stackpilot-ai] Scaffolding backend: ${resolvedBackend}...\n`);
+    try {
+      const { command } = getScaffoldCommand(resolvedBackend, `${baseName}-backend`);
+      await runSpawn(command, projectDir, socket, "Backend");
+    } catch (e: any) {
+      socket.emit("engine-output", `⚠️ Backend scaffold: ${e.message}\n`);
+    }
+  }
+
   // Save project record so the IDE can find it
   await saveProjectRecord({
     projectId,
     projectName,
-    baseName: projectName,
+    baseName,
     folderName: projectId,
-    frontend: undefined,
-    backend: undefined,
+    frontend: resolvedFrontend,
+    backend: resolvedBackend,
     createdAt: new Date().toISOString(),
   });
 
@@ -132,7 +201,6 @@ const runEngineWithSocket = async (
 
   return { projectId, projectName };
 };
-
 
 interface ProjectCreatePayload {
   frontend?: Framework;
@@ -171,30 +239,42 @@ const runSpawn = (
 };
 
 export const handleProjectSocket = (socket: any) => {
-  socket.on("engine:run", async ({ prompt }: { prompt?: string }) => {
-    if (!prompt?.trim()) {
-      socket.emit(
-        "engine-output",
-        "\n[stackpilot-ai] Please provide a prompt.\n"
-      );
-      socket.emit("engine-status", {
-        status: "error",
-        error: "No prompt provided",
-      });
-      return;
-    }
+  socket.on(
+    "engine:run",
+    async (
+      { prompt }: { prompt?: string },
+      acknowledge?: (response: { accepted: boolean; error?: string }) => void
+    ) => {
+      if (!prompt?.trim()) {
+        acknowledge?.({ accepted: false, error: "No prompt provided" });
+        socket.emit(
+          "engine-output",
+          "\n[stackpilot-ai] Please provide a prompt.\n"
+        );
+        socket.emit("engine-status", {
+          status: "error",
+          error: "No prompt provided",
+        });
+        return;
+      }
 
-    try {
-      socket.emit("engine-output", `\n[stackpilot-ai] Prompt: ${prompt}\n`);
-      const { projectId, projectName } = await runEngineWithSocket(prompt, socket);
+      acknowledge?.({ accepted: true });
 
-      // Redirect the dashboard to the IDE for the newly created project
-      socket.emit("project-done", { projectId, projectName });
-    } catch (error: any) {
-      socket.emit("engine-output", `\n[stackpilot-ai] ${error.message}\n`);
-      socket.emit("engine-status", { status: "error", error: error.message });
+      try {
+        socket.emit("engine-output", `\n[stackpilot-ai] Prompt: ${prompt}\n`);
+        const { projectId, projectName } = await runEngineWithSocket(
+          prompt,
+          socket
+        );
+
+        // Redirect the dashboard to the IDE for the newly created project
+        socket.emit("project-done", { projectId, projectName });
+      } catch (error: any) {
+        socket.emit("engine-output", `\n[stackpilot-ai] ${error.message}\n`);
+        socket.emit("engine-status", { status: "error", error: error.message });
+      }
     }
-  });
+  );
 
   socket.on(
     "createProject",
