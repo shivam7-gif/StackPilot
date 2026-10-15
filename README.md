@@ -8,8 +8,6 @@ At the core of the platform is the **Karma Ai Engine**—an event-driven multi-a
 
 Conventional AI coding assistants suffer from fundamental limitations: they lose context over long-running sessions, operate without deep awareness of large codebases, require developers to juggle fragmented tools, and stop at generating isolated blocks of unverified code. StackPilot AI eliminates these barriers by coupling its multi-agent orchestration with persistent contextual memory (**Karma Memory Graph**), repository-wide AST-based semantic intelligence (**KarmaRepo**), cryptographic snapshot verification (**KarmaChain**), and a redundant parallel generation subsystem (**Karma H-Series System**).
 
-Whether operated through its browser-based developer studio or lightweight CLI, StackPilot AI enables developers to shift focus from low-level boilerplate and toolchain glue to architectural intent, while coordinated agents manage the operational mechanics of building, verifying, and deploying software.
-
 ---
 
 ## ✨ Overview
