@@ -133,6 +133,8 @@ app.use((req, res, next) => {
     req.path.startsWith("/preview") ||
     req.path.startsWith("/projects") ||
     req.path.startsWith("/api/projects") ||
+    req.path.startsWith("/api/integrations") ||
+    req.path.startsWith("/integrations") ||
     req.path.startsWith("/metrics") ||
     req.path.startsWith("/_debug") ||
     req.path.startsWith("/socket.io")

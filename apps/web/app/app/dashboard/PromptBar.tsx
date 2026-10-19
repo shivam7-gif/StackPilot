@@ -33,6 +33,7 @@ import {
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import "./PromptBar.css";
+import GlideSelect from "./GlideSelect";
 
 export interface SourceItem {
   key: string;
@@ -76,6 +77,7 @@ export interface PromptBarProps {
   commands?: CommandItem[];
   models?: ModelItem[];
   defaultModel?: string;
+  onModelChange?: (model: ModelItem) => void;
   efforts?: string[];
   defaultEffort?: string;
   onEffortChange?: (effort: string) => void;
@@ -305,6 +307,7 @@ export default function PromptBar({
   commands = DEFAULT_COMMANDS,
   models = DEFAULT_MODELS,
   defaultModel = "",
+  onModelChange,
   efforts = DEFAULT_EFFORTS,
   defaultEffort = "",
   onEffortChange,
@@ -348,8 +351,9 @@ export default function PromptBar({
       | void;
     onDictate?: () => Promise<string | undefined> | string | void;
     onEffortChange?: (effort: string) => void;
+    onModelChange?: (model: ModelItem) => void;
   }>({});
-  latest.current = { onSend, onStop, onAttach, onDictate, onEffortChange };
+  latest.current = { onSend, onStop, onAttach, onDictate, onEffortChange, onModelChange };
 
   const [draft, setDraft] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
@@ -357,7 +361,6 @@ export default function PromptBar({
     () => defaultModel || getModelKey(models[0])
   );
   const [plusOpen, setPlusOpen] = useState(false);
-  const [modelOpen, setModelOpen] = useState(false);
   const [effortOpen, setEffortOpen] = useState(false);
   const [effortIndex, setEffortIndex] = useState(() => {
     const i = efforts.indexOf(defaultEffort);
@@ -369,10 +372,18 @@ export default function PromptBar({
   const [pressed, setPressed] = useState(false);
 
   const model = models.find((m) => getModelKey(m) === modelKey) ?? models[0];
+  const glideModelOptions = useMemo(() => {
+    return models.map((m) => ({
+      value: getModelKey(m),
+      label: getModelName(m),
+      tag: getModelTag(m),
+    }));
+  }, [models]);
+
   const token = dismissed ? null : parseToken(draft);
   const open = plusOpen
     ? "at"
-    : (token?.kind ?? (modelOpen ? "model" : effortOpen ? "effort" : null));
+    : (token?.kind ?? (effortOpen ? "effort" : null));
   const query = plusOpen ? "" : (token?.query ?? "");
   const list = useMemo(() => {
     if (open === "at")
@@ -381,9 +392,8 @@ export default function PromptBar({
       return commands.filter((c) =>
         c.name.replace(/^\//, "").toLowerCase().startsWith(query)
       );
-    if (open === "model") return models;
     return [];
-  }, [open, query, sources, commands, models]);
+  }, [open, query, sources, commands]);
   const cursor = Math.min(active, Math.max(0, list.length - 1));
   const canSend = draft.trim().length > 0 || attachments.length > 0;
   const armed = busy || canSend;
@@ -393,7 +403,6 @@ export default function PromptBar({
   const focusInput = () => inputRef.current?.focus({ preventScroll: true });
   const closeMenus = useCallback(() => {
     setPlusOpen(false);
-    setModelOpen(false);
     setEffortOpen(false);
   }, []);
 
@@ -421,13 +430,13 @@ export default function PromptBar({
   }, [open]);
 
   useEffect(() => {
-    if (!plusOpen && !modelOpen && !effortOpen) return undefined;
+    if (!plusOpen && !effortOpen) return undefined;
     const onDown = (e: PointerEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) closeMenus();
     };
     document.addEventListener("pointerdown", onDown);
     return () => document.removeEventListener("pointerdown", onDown);
-  }, [plusOpen, modelOpen, effortOpen, closeMenus]);
+  }, [plusOpen, effortOpen, closeMenus]);
 
   useLayoutEffect(() => {
     const el = inputRef.current;
@@ -597,12 +606,6 @@ export default function PromptBar({
     i === efforts.length - 1 ? "100%" : `calc(${stepAt(i)} + 7px)`;
 
   const pick = (row: any) => {
-    if (open === "model") {
-      setModelKey(getModelKey(row));
-      setModelOpen(false);
-      focusInput();
-      return;
-    }
     const head = token ? draft.slice(0, token.start) : draft;
     if (row.attach) {
       setDraft(head);
@@ -720,9 +723,7 @@ export default function PromptBar({
               ? "Sources"
               : open === "slash"
                 ? "Commands"
-                : open === "model"
-                  ? "Models"
-                  : "Effort"
+                : "Effort"
           }
           data-kind={open}
         >
@@ -792,7 +793,7 @@ export default function PromptBar({
               />
               {list.map((row: any, i: number) => (
                 <button
-                  key={getModelKey(row) || row.key || i}
+                  key={row.key || i}
                   ref={(el) => {
                     rowRefs.current[i] = el;
                   }}
@@ -810,35 +811,12 @@ export default function PromptBar({
                     </span>
                   ) : null}
                   <span className="prompt-bar__row-name">
-                    {open === "model" ? getModelName(row) : row.name}
+                    {row.name}
                   </span>
                   {row.description ? (
                     <span className="prompt-bar__row-desc">
                       {row.description}
                     </span>
-                  ) : null}
-                  {open === "model" ? (
-                    <>
-                      {getModelTag(row) ? (
-                        <span className="prompt-bar__row-tag">
-                          {getModelTag(row)}
-                        </span>
-                      ) : null}
-                      <span
-                        className="prompt-bar__row-check"
-                        data-on={
-                          getModelKey(row) === getModelKey(model)
-                            ? ""
-                            : undefined
-                        }
-                      >
-                        <HugeiconsIcon
-                          icon={Tick02Icon}
-                          size={13}
-                          strokeWidth={2.5}
-                        />
-                      </span>
-                    </>
                   ) : null}
                 </button>
               ))}
@@ -920,7 +898,6 @@ export default function PromptBar({
             data-on={plusOpen ? "" : undefined}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
-              setModelOpen(false);
               setEffortOpen(false);
               setActive(0);
               setPlusOpen((v) => !v);
@@ -930,35 +907,28 @@ export default function PromptBar({
             <HugeiconsIcon icon={PlusSignIcon} size={16} strokeWidth={2} />
           </button>
           {models.length > 0 ? (
-            <button
-              type="button"
-              className="prompt-bar__pick"
-              aria-label="Choose model"
-              aria-expanded={modelOpen}
-              data-on={modelOpen ? "" : undefined}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                setPlusOpen(false);
-                setEffortOpen(false);
-                setActive(
-                  Math.max(
-                    0,
-                    models.findIndex(
-                      (m) => getModelKey(m) === getModelKey(model)
-                    )
-                  )
-                );
-                setModelOpen((v) => !v);
-                focusInput();
+            <GlideSelect
+              options={glideModelOptions}
+              value={getModelKey(model)}
+              onChange={(val) => {
+                const found = models.find((m) => getModelKey(m) === val);
+                if (found) {
+                  setModelKey(val);
+                  latest.current.onModelChange?.(found);
+                }
               }}
-            >
-              <span>{getModelName(model)}</span>
-              <HugeiconsIcon
-                icon={ArrowDown01Icon}
-                size={12}
-                strokeWidth={2.4}
-              />
-            </button>
+              ariaLabel="AI Model"
+              showTags
+              placement="top"
+              align="left"
+              size="sm"
+              radius={10}
+              menuWidth={220}
+              accentColor="#f5f5f5"
+              surfaceColor="#27272a"
+              highlightColor="#3f3f46"
+              textColor="#f5f5f5"
+            />
           ) : null}
           {efforts.length > 0 ? (
             <button
@@ -971,7 +941,6 @@ export default function PromptBar({
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 setPlusOpen(false);
-                setModelOpen(false);
                 setEffortOpen((v) => !v);
                 focusInput();
               }}

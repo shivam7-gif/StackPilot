@@ -26,7 +26,7 @@ function ProviderButton({
     );
 }
 
-export default function OAuthButtons() {
+export default function OAuthButtons({ redirectTo = "/setup/ai" }: { redirectTo?: string } = {}) {
     const providers: { id: OAuthProvider; label: string; icon: React.ReactNode }[] = [
         { id: "google", label: "Continue with Google", icon: <GoogleIcon /> },
         { id: "github", label: "Continue with GitHub", icon: <GithubIcon /> },
@@ -35,7 +35,7 @@ export default function OAuthButtons() {
     return (
         <div className="flex flex-col gap-3">
             {providers.map((p) => (
-                <form key={p.id} action={signInWithProvider.bind(null, p.id)}>
+                <form key={p.id} action={signInWithProvider.bind(null, p.id, redirectTo)}>
                     <ProviderButton
                         icon={p.icon}
                         label={p.label}

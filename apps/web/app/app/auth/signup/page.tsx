@@ -10,7 +10,7 @@ export default function SignupPage() {
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        transitionTo("/dashboard", {
+        transitionTo("/onboarding", {
             variant: "authToDashboard",
             text: "StackPilot",
         });

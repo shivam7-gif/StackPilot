@@ -1,129 +1,168 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { socket } from "@/config/socket";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Attachment01Icon, Globe02Icon } from "@hugeicons/core-free-icons";
-import PromptBar from "./PromptBar";
+import { useSession } from "next-auth/react";
+import {
+  Sparkles,
+  Layers,
+  ArrowRight,
+  Plus,
+  Edit2,
+  Check,
+  Terminal,
+  ExternalLink,
+  ChevronDown,
+  FolderCode,
+  Clock,
+  Trash2,
+  Key,
+} from "lucide-react";
 import StaggeredMenu from "./StaggeredMenu";
 import Folder from "./Folder";
+import GlideSelect from "./GlideSelect";
 import catalog from "./openrouter-free-models.json";
-import { useAiEngine } from "@/hooks/useAiEngine";
 import { checkHealth, AI_BACKEND_URL } from "@/config/aiApi";
 import { scaffoldAiProjectApi } from "@/apis/project";
+import { MessageList } from "@/components/chat/MessageList";
+import { ChatComposer } from "@/components/chat/ChatComposer";
+import { useDashboardChat } from "@/hooks/useDashboardChat";
 
-const modelOptions = catalog.models.map((m) => ({
-  value: m.id,
-  label: m.label,
-  badge: m.tag,
-  description: m.bestFor,
-}));
-
-type OverlayStep = "idle" | "creating" | "logs" | "done";
-
-function Spinner() {
-  return (
-    <svg
-      className="animate-spin"
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-    </svg>
-  );
+export interface ModelOption {
+  id: string;
+  label: string;
+  tag?: string;
+  provider?: string;
+  bestFor?: string;
 }
 
-function LogLine({ text, i }: { text: string; i: number }) {
-  return (
-    <div
-      className="text-[12px] font-mono py-0.5"
-      style={{
-        color: text.startsWith("✓")
-          ? "#16a34a"
-          : text.startsWith("✗")
-            ? "#dc2626"
-            : "#525252",
-        animationDelay: `${i * 30}ms`,
-      }}
-    >
-      {text}
-    </div>
-  );
+export interface BackendProject {
+  projectId: string;
+  projectName: string;
+  description?: string;
+  status?: string;
+  frontend?: string;
+  backend?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
+
+const DEFAULT_MODELS: ModelOption[] = [
+  ...catalog.models.map((m) => ({
+    id: m.id,
+    label: m.label,
+    tag: m.tag,
+    provider: m.provider,
+    bestFor: m.bestFor,
+  })),
+  {
+    id: "anthropic/claude-3.7-sonnet",
+    label: "Claude 3.7 Sonnet",
+    tag: "Pro",
+    provider: "Anthropic",
+    bestFor: "Complex software architecture, full-stack generation, and debugging",
+  },
+  {
+    id: "openai/gpt-4o",
+    label: "GPT-4o",
+    tag: "High Speed",
+    provider: "OpenAI",
+    bestFor: "Fast multi-turn logic and API design",
+  },
+  {
+    id: "deepseek/deepseek-r1",
+    label: "DeepSeek R1",
+    tag: "Reasoning",
+    provider: "DeepSeek",
+    bestFor: "Deep reasoning, algorithms, and validation",
+  },
+];
 
 export default function DashboardPage() {
-  const [frontendFramework, setFrontendFramework] = useState("");
-  const [backendFramework, setBackendFramework] = useState("");
-  const [projectName, setProjectName] = useState("");
-  const [logs, setLogs] = useState<string[]>([]);
-  const [overlayStep, setOverlayStep] = useState<OverlayStep>("idle");
   const router = useRouter();
+  const { data: session } = useSession();
+  const userId = session?.user?.id || (session?.user?.email ? encodeURIComponent(session.user.email) : "default-user");
 
-  const [prompt, setPrompt] = useState("");
-  const [userName, setUserName] = useState<string>("Shivam Rawat");
+  const [userName, setUserName] = useState<string>("Developer");
   const [folderHovered, setFolderHovered] = useState(false);
   const [folderOpen, setFolderOpen] = useState(false);
   const [headingHovered, setHeadingHovered] = useState(false);
+  const [activeNav, setActiveNav] = useState<"Workspace" | "Projects">("Workspace");
+  const [workspaceProject, setWorkspaceProject] = useState<string>("stackpilot-project");
+  const [isEditingProjectName, setIsEditingProjectName] = useState(false);
+  const [projectNameDraft, setProjectNameDraft] = useState("");
+  const [composerDraft, setComposerDraft] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [activeNav, setActiveNav] = useState("Chat");
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const [frontendFramework, setFrontendFramework] = useState("");
+  const [backendFramework, setBackendFramework] = useState("");
+  const [newProjectName, setNewProjectName] = useState("");
+  const [lastScaffoldedProjectId, setLastScaffoldedProjectId] = useState<string | null>(null);
 
-  const isHeadingPopped = folderHovered || headingHovered || folderOpen;
-  const controller = useRef<AbortController | null>(null);
+  // Projects list for returning users
+  const [projectsList, setProjectsList] = useState<BackendProject[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+
+  // OpenRouter BYOK status
+  const [openRouterConnected, setOpenRouterConnected] = useState<boolean>(false);
+  const [openRouterKeyMasked, setOpenRouterKeyMasked] = useState<string | null>(null);
+
+  // Model Selection
+  const [selectedModel, setSelectedModel] = useState<ModelOption>(DEFAULT_MODELS[0]);
+
+  // AI Backend Health
+  const [aiBackendOnline, setAiBackendOnline] = useState<boolean | null>(null);
+
   const lastPromptRef = useRef<string>("");
 
-  // ── AI Engine HTTP API hook ──────────────────────────────────────────────
-  const ai = useAiEngine({
-    stream: true,
-    onResult: async (data) => {
-      try {
-        setOverlayStep("creating");
-        const frontendFw = data.architecture?.frontend?.framework;
-        const backendFw = data.architecture?.backend?.framework;
-
-        setLogs((prev) => [
-          ...prev,
-          `📦 Scaffolding project: ${data.projectName}`,
-          `⚙️ Architecture detected: Frontend=${frontendFw || "None"}, Backend=${backendFw || "None"}`,
-          `📁 Writing ${data.files.length} AI files to disk...`,
-        ]);
-        setOverlayStep("logs");
-
-        const scaffoldRes = await scaffoldAiProjectApi({
-          projectName: data.projectName,
-          files: data.files,
-          frontend: frontendFw,
-          backend: backendFw,
-          prompt: lastPromptRef.current,
-        });
-
-        if (scaffoldRes?.projectId) {
-          setOverlayStep("done");
-          setLogs((prev) => [
-            ...prev,
-            `✓ Project scaffolded successfully! (ID: ${scaffoldRes.projectId})`,
-            `🚀 Redirecting to IDE...`,
-          ]);
-          setTimeout(() => {
-            router.push(`/project/${scaffoldRes.projectId}`);
-          }, 1200);
-        }
-      } catch (err: any) {
-        console.error("Auto-scaffold error:", err);
-        setLogs((prev) => [
-          ...prev,
-          `❌ Scaffold error: ${err?.message || String(err)}`,
-        ]);
+  // Fetch recent projects list from backend
+  const fetchProjects = useCallback(async () => {
+    try {
+      setLoadingProjects(true);
+      const res = await fetch(`http://localhost:5000/projects?ownerId=${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProjectsList(data.projects || []);
       }
-    },
-  });
+    } catch (e) {
+      console.warn("Could not fetch projects list:", e);
+    } finally {
+      setLoadingProjects(false);
+    }
+  }, [userId]);
 
-  // Track AI backend health
-  const [aiBackendOnline, setAiBackendOnline] = useState<boolean | null>(null);
+  // Fetch OpenRouter connection status
+  const fetchOpenRouterStatus = useCallback(async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/integrations/openrouter/status?userId=${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setOpenRouterConnected(Boolean(data.connected));
+        setOpenRouterKeyMasked(data.keyMasked || null);
+      }
+    } catch { }
+  }, [userId]);
+
+  // Initial mount
+  useEffect(() => {
+    fetchProjects();
+    fetchOpenRouterStatus();
+
+    // Clean up legacy cached chat messages and drafts
+    try {
+      localStorage.removeItem("stackpilot_dashboard_messages");
+      localStorage.removeItem("stackpilot_dashboard_title");
+      localStorage.removeItem("stackpilot_dashboard_draft");
+      localStorage.removeItem("stackpilot_workspace_messages");
+
+      const pName = localStorage.getItem("stackpilot_project_name");
+      if (pName) {
+        setWorkspaceProject(pName);
+        setProjectNameDraft(pName);
+      }
+    } catch { }
+  }, [fetchProjects, fetchOpenRouterStatus]);
+
+  // Track backend health
   useEffect(() => {
     checkHealth().then(setAiBackendOnline);
     const interval = setInterval(() => {
@@ -132,213 +171,37 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Alias from the hook for backward compatibility
-  const chatMessages = ai.messages;
-  const aiTyping = ai.aiTyping;
-  const busy = ai.busy;
+  const chat = useDashboardChat();
 
+  // User name resolution from session or storage
   useEffect(() => {
-    if (ai.messages.length > 0) {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [ai.messages, ai.aiTyping]);
-
-  // ── Send prompt via HTTP API to AiBackend ──────────────────────────────
-  const send = async (
-    text: string,
-    {
-      attachments,
-      model,
-      effort,
-    }: {
-      attachments: string[];
-      model: { key?: string; value?: string; name?: string; label?: string };
-      effort: string;
-    }
-  ) => {
-    lastPromptRef.current = text;
-    const modelId = model.value || model.key || catalog.defaultModelId;
-
-    // Use the AI engine HTTP API (SSE streaming)
-    await ai.send({
-      prompt: text,
-      model: modelId,
-      effort,
-      attachments,
-    });
-  };
-
-  const pickFiles = (): Promise<string[]> => {
-    return new Promise((resolve) => {
-      if (typeof document === "undefined") return resolve([]);
-      const input = document.createElement("input");
-      input.type = "file";
-      input.multiple = true;
-      input.onchange = () => {
-        const files = Array.from(input.files || []).map((f) => f.name);
-        resolve(files);
-      };
-      input.click();
-    });
-  };
-
-  const transcribe = (): Promise<string> => {
-    return new Promise((resolve) => {
-      if (typeof window === "undefined") return resolve("");
-      const SpeechRecognition =
-        (window as any).SpeechRecognition ||
-        (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert("Speech recognition is not supported in this browser.");
-        resolve("");
-        return;
+    if (session?.user?.name) {
+      setUserName(session.user.name.trim());
+    } else if (session?.user?.email) {
+      if (session.user.email.includes("shivamsrawat7") || session.user.email.toLowerCase().includes("rawat")) {
+        setUserName("Shivam Rawat");
+      } else {
+        const emailParts = session.user.email.split("@")[0].replace(/[0-9_.-]/g, " ").trim();
+        const formatted = emailParts
+          ? emailParts
+            .split(" ")
+            .filter(Boolean)
+            .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(" ")
+          : "Shivam Rawat";
+        setUserName(formatted || "Shivam Rawat");
       }
-      try {
-        const recognition = new SpeechRecognition();
-        recognition.lang = "en-US";
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-        recognition.onresult = (event: any) => {
-          const transcript = event.results[0]?.[0]?.transcript || "";
-          resolve(transcript);
-        };
-        recognition.onerror = () => {
-          resolve("");
-        };
-        recognition.start();
-      } catch {
-        resolve("");
-      }
-    });
-  };
-
-  // Fetch session / username
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.user?.name) {
-          // Display the user's full name without truncating
-          setUserName(data.user.name.trim());
-        } else if (data?.user?.email) {
-          if (
-            data.user.email.includes("shivamsrawat7") ||
-            data.user.email.toLowerCase().includes("rawat")
-          ) {
-            setUserName("Shivam Rawat");
-          } else {
-            const emailParts = data.user.email
-              .split("@")[0]
-              .replace(/[0-9_.-]/g, " ")
-              .trim();
-            const formatted = emailParts
-              ? emailParts
-                  .split(" ")
-                  .filter(Boolean)
-                  .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
-                  .join(" ")
-              : "Shivam Rawat";
-            setUserName(formatted || "Shivam Rawat");
-          }
-        }
-      })
-      .catch(() => {});
+    }
 
     try {
       const stored =
         localStorage.getItem("stackpilot_fullname") ||
         localStorage.getItem("stackpilot_username");
       if (stored && stored.trim()) setUserName(stored.trim());
-    } catch {}
-  }, []);
+    } catch { }
+  }, [session]);
 
-  // Socket connection
-  useEffect(() => {
-    socket.connect();
-    socket.on("connect", () => console.log("connected:", socket.id));
-    socket.on("connect_error", (err) => {
-      console.error("Socket connect error:", err);
-      setLogs((p) => [...p, `[Connection issue] ${err.message}`]);
-    });
-    socket.on("project-log", (log) => setLogs((p) => [...p, String(log)]));
-    socket.on("project-step", (step: string) => {
-      if (step === "folders") setOverlayStep("creating");
-      if (step === "scaffolding") setOverlayStep("logs");
-      if (step === "done") setOverlayStep("done");
-    });
-    socket.on("project-done", ({ projectId }) => {
-      setOverlayStep("done");
-      setTimeout(() => router.push(`/project/${projectId}`), 1000);
-    });
-    socket.on("engine-output", (payload: unknown) => {
-      console.log("[PromptBar] Backend prompt response:", payload);
-      const text = String(payload ?? "").replace(/\r/g, "");
-      const lines = text.split(/\n/).filter(Boolean);
-      if (lines.length === 0) return;
-      setLogs((prev) => [...prev, ...lines]);
-    });
-    socket.on("engine-status", (_status: { status?: string }) => {
-      // Status lifecycle managed by useAiEngine
-    });
-
-    return () => {
-      socket.off("connect");
-      socket.off("project-log");
-      socket.off("project-step");
-      socket.off("project-done");
-      socket.off("engine-output");
-      socket.off("engine-status");
-      socket.disconnect();
-    };
-  }, [router]);
-
-  function handleCreateProject() {
-    socket.emit("createProject", {
-      frontend: frontendFramework,
-      backend: backendFramework,
-      projectName,
-    });
-    setOverlayStep("creating");
-    setShowModal(false);
-  }
-
-  useEffect(() => {
-    if (ai.messages.length > 0) {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [ai.messages, ai.aiTyping]);
-
-  const menuItems = [
-    {
-      label: "Chat",
-      ariaLabel: "Go to Chat",
-      onClick: () => {
-        setActiveNav("Chat");
-        ai.clear();
-      },
-    },
-    {
-      label: "Projects",
-      ariaLabel: "View Projects",
-      onClick: () => setActiveNav("Projects"),
-    },
-    {
-      label: "New Project",
-      ariaLabel: "Create New Project",
-      onClick: () => setShowModal(true),
-    },
-    {
-      label: "Settings",
-      ariaLabel: "Open Settings",
-      onClick: () => setActiveNav("Settings"),
-    },
-  ];
-
-  const socialItems = [
-    { label: "GitHub", link: "https://github.com/shivam7-gif/StackPilot" },
-    { label: "Docs", link: "#" },
-    { label: "Community", link: "#" },
-  ];
+  const isHeadingPopped = folderHovered || headingHovered || folderOpen || chat.messages.length > 0;
 
   const authPhotos = [
     <img
@@ -356,126 +219,362 @@ export default function DashboardPage() {
     <img
       key="roboto"
       src="/auth/Transhumans - Roboto.png"
-      alt="Auth illustration"
+      alt="Roboto character"
       className="w-full h-full object-cover rounded-md"
     />,
   ];
 
+  // STAGE D TO E: When user enters prompt on Dashboard, create draft project & navigate to /project/[id]/onboarding
+  const handleLaunchProjectFromPrompt = async (promptQuery: string) => {
+    const query = promptQuery.trim();
+    if (!query) return;
+
+    // Derive a clean project name from the prompt
+    const pLower = query.toLowerCase();
+    let nameGuess = "my-app";
+    if (pLower.includes("dashboard")) nameGuess = "analytics-dashboard";
+    else if (pLower.includes("saas")) nameGuess = "saas-application";
+    else if (pLower.includes("api")) nameGuess = "rest-api-service";
+    else if (pLower.includes("whiteboard") || pLower.includes("canvas")) nameGuess = "collab-whiteboard";
+    else if (pLower.includes("chat") || pLower.includes("ai")) nameGuess = "ai-chat-app";
+    else {
+      const words = query.split(/\s+/).slice(0, 3).join("-").replace(/[^a-z0-9-]/gi, "").toLowerCase();
+      if (words) nameGuess = words;
+    }
+
+    try {
+      const res = await fetch("http://localhost:5000/projects/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectName: nameGuess,
+          prompt: query,
+          description: query,
+          model: selectedModel.id,
+          ownerId: userId,
+          category: "Full-Stack Application",
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to create draft project");
+      }
+
+      const data = await res.json();
+      if (data?.projectId) {
+        // Navigate directly to Stage E: /project/[id]/onboarding
+        router.push(`/project/${data.projectId}/onboarding`);
+      }
+    } catch (err: any) {
+      console.warn("Falling back to chat workflow:", err);
+      // Fallback: send prompt to active chat
+      chat.send(query, {
+        model: selectedModel.id,
+        effort: "high",
+      });
+    }
+  };
+
+  const handleSaveProjectName = () => {
+    const trimmed = projectNameDraft.trim();
+    if (trimmed) {
+      setWorkspaceProject(trimmed);
+      try {
+        localStorage.setItem("stackpilot_project_name", trimmed);
+      } catch { }
+    }
+    setIsEditingProjectName(false);
+  };
+
+  const handleDeleteProject = async (e: React.MouseEvent, pId: string) => {
+    e.stopPropagation();
+    try {
+      await fetch(`http://localhost:5000/projects/${pId}`, { method: "DELETE" });
+      fetchProjects();
+    } catch { }
+  };
+
+  const menuItems = [
+    {
+      label: "AI Workspace",
+      ariaLabel: "Go to Workspace",
+      onClick: () => setActiveNav("Workspace"),
+    },
+    {
+      label: "Recent Projects",
+      ariaLabel: "View Projects",
+      onClick: () => {
+        fetchProjects();
+        setActiveNav("Projects");
+      },
+    },
+    {
+      label: "AI Provider (BYOK)",
+      ariaLabel: "OpenRouter Setup",
+      onClick: () => router.push("/setup/ai"),
+    },
+  ];
+
+  const socialItems = [
+    { label: "GitHub", link: "https://github.com/shivam7-gif/StackPilot" },
+    { label: "Docs", link: "#" },
+    { label: "Community", link: "#" },
+  ];
+
   return (
-    <div className="relative flex h-screen w-screen overflow-hidden bg-white text-black font-sans antialiased">
-      {/* ─── SLIDING DASHBOARD MENU (React Bits StaggeredMenu) ─── */}
+    <div className="relative flex h-screen w-screen overflow-hidden bg-white text-neutral-900 font-sans antialiased">
+      {/* ─── SLIDING DRAWER MENU ─── */}
       <StaggeredMenu
         position="left"
         items={menuItems}
         socialItems={socialItems}
         displaySocials={true}
         displayItemNumbering={true}
-        menuButtonColor="#111"
-        openMenuButtonColor="#111"
+        menuButtonColor="#18181b"
+        openMenuButtonColor="#18181b"
         changeMenuColorOnOpen={true}
-        colors={["#18181b", "#5227FF"]}
-        accentColor="#5227FF"
+        colors={["#18181b", "#ea580c"]}
+        accentColor="#ea580c"
         userName={userName}
+        projectName={workspaceProject}
         isFixed={true}
       />
 
-      {/* ─── MAIN CONTENT ─── */}
+      {/* ─── MAIN CHAT WORKSPACE ─── */}
       <main className="flex-1 flex flex-col min-w-0 bg-white relative overflow-hidden">
-        {/* Top bar */}
-        <header className="flex items-center justify-between px-6 h-14 shrink-0 border-b border-black/10 bg-white z-20">
-          <div className="flex items-center gap-3 pl-24 md:pl-28">
-            <span className="text-sm font-semibold tracking-tight text-neutral-800">
-              StackPilot
-            </span>
-            <span className="text-neutral-300">/</span>
-            <span className="text-sm font-medium text-neutral-500">
-              {activeNav}
-            </span>
+        {/* Fixed Top Navigation Toolbar */}
+        <header className="flex items-center justify-between px-4 sm:px-6 h-13 shrink-0 border-b border-neutral-200/90 bg-white z-20 select-none">
+          {/* Left: Breadcrumbs & Navigation Tabs */}
+          <div className="flex items-center gap-2.5 pl-14 md:pl-16 min-w-0">
+
+
+            <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+              {/* View Selector (Workspace vs Projects) */}
+              <div className="flex items-center bg-neutral-100 p-0.5 rounded-lg border border-neutral-200">
+                <button
+                  type="button"
+                  onClick={() => setActiveNav("Workspace")}
+                  className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold transition cursor-pointer ${activeNav === "Workspace"
+                    ? "bg-white text-neutral-900 shadow-2xs"
+                    : "text-neutral-500 hover:text-neutral-800"
+                    }`}
+                >
+                  Workspace
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    fetchProjects();
+                    setActiveNav("Projects");
+                  }}
+                  className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold transition cursor-pointer ${activeNav === "Projects"
+                    ? "bg-white text-neutral-900 shadow-2xs"
+                    : "text-neutral-500 hover:text-neutral-800"
+                    }`}
+                >
+                  Projects ({projectsList.length})
+                </button>
+              </div>
+            </div>
           </div>
 
+          {/* Right: Actions & Integrations */}
           <div className="flex items-center gap-2">
-            {chatMessages.length > 0 && (
-              <button
-                onClick={() => ai.clear()}
-                className="flex items-center gap-1.5 px-3.5 h-9 rounded-full text-xs font-semibold border border-black/10 text-neutral-700 hover:text-black hover:bg-neutral-100 transition active:scale-[0.98]"
-              >
-                + New Chat
-              </button>
-            )}
-            {/* AI Backend status indicator */}
+            {/* OpenRouter BYOK Status Pill */}
+            <button
+              type="button"
+              onClick={() => router.push("/setup/ai")}
+              className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono border transition cursor-pointer ${openRouterConnected
+                ? "border-emerald-200 text-emerald-700 bg-emerald-50/60 hover:bg-emerald-100/60"
+                : "border-neutral-200 text-neutral-600 bg-neutral-50 hover:bg-neutral-100"
+                }`}
+              title="Configure OpenRouter AI Engine (BYOK)"
+            >
+              <Key className="w-3 h-3 text-orange-600" />
+              <span>{openRouterConnected ? "AI: Connected" : "Connect AI"}</span>
+            </button>
+
+            {/* Topbar AI Model Selector powered by GlideSelect */}
+            <GlideSelect
+              options={DEFAULT_MODELS.map((m) => ({
+                value: m.id,
+                label: m.label,
+                tag: m.tag,
+              }))}
+              value={selectedModel.id}
+              onChange={(mId) => {
+                const found = DEFAULT_MODELS.find((m) => m.id === mId);
+                if (found) setSelectedModel(found);
+              }}
+              ariaLabel="AI Model Selection"
+              showTags
+              placement="bottom"
+              align="right"
+              size="sm"
+              radius={8}
+              menuWidth={240}
+              accentColor="#ea580c"
+              surfaceColor="#ffffff"
+              highlightColor="#f4f4f5"
+              textColor="#18181b"
+            />
+
+            {/* AI Health Indicator */}
             <span
-              className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-[10px] font-medium border transition ${
-                aiBackendOnline === true
-                  ? "border-green-200 text-green-700 bg-green-50"
-                  : aiBackendOnline === false
-                    ? "border-red-200 text-red-600 bg-red-50"
-                    : "border-neutral-200 text-neutral-400 bg-neutral-50"
-              }`}
-              title={`AI Backend: ${AI_BACKEND_URL}`}
+              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-mono border transition select-none ${aiBackendOnline === true
+                ? "border-emerald-200 text-emerald-700 bg-emerald-50/60"
+                : aiBackendOnline === false
+                  ? "border-red-200 text-red-600 bg-red-50"
+                  : "border-neutral-200 text-neutral-400 bg-neutral-50"
+                }`}
             >
               <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  aiBackendOnline === true
-                    ? "bg-green-500"
-                    : aiBackendOnline === false
-                      ? "bg-red-500"
-                      : "bg-neutral-400"
-                }`}
+                className={`w-1.5 h-1.5 rounded-full ${aiBackendOnline === true
+                  ? "bg-emerald-500 animate-pulse"
+                  : aiBackendOnline === false
+                    ? "bg-red-500"
+                    : "bg-neutral-400"
+                  }`}
               />
-              {aiBackendOnline === true
-                ? "AI Online"
-                : aiBackendOnline === false
-                  ? "AI Offline"
-                  : "Checking…"}
+              <span className="hidden md:inline">
+                {aiBackendOnline === true ? "Online" : "Connecting"}
+              </span>
             </span>
-            <button
-              onClick={() => setShowModal(true)}
-              className="flex items-center gap-1.5 px-4 h-9 rounded-full text-xs font-semibold bg-black text-white hover:bg-[#5227FF] transition active:scale-[0.98] shadow-sm"
-            >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
+
+            {/* New Chat Button */}
+            {chat.messages.length > 0 && activeNav === "Workspace" && (
+              <button
+                type="button"
+                onClick={() => chat.clear()}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition cursor-pointer"
               >
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              New Project
-            </button>
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">New Prompt</span>
+              </button>
+            )}
           </div>
         </header>
 
-        {/* Center Canvas */}
-        <div
-          className={`flex-1 overflow-y-auto px-4 flex flex-col items-center relative pb-36 min-h-0 ${
-            chatMessages.length === 0 ? "justify-center" : "justify-start"
-          }`}
-        >
-          {chatMessages.length === 0 ? (
-            /* Welcome / Empty State: Pop-out Heading + 3D Interactive Folder */
-            <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center animate-in fade-in duration-300">
-              {/* Pop-out Heading: springs out when hovering on folder */}
+        {/* ─── BODY CONTAINER ─── */}
+        <div className="flex-1 overflow-hidden flex flex-col relative min-h-0 bg-white">
+          {activeNav === "Projects" ? (
+            /* RETURNING USERS: RECENT PROJECTS DIRECTORY */
+            <div className="flex-1 overflow-y-auto p-6 sm:p-10 max-w-4xl mx-auto w-full">
+              <div className="flex items-center justify-between mb-6 pb-3 border-b border-neutral-200">
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight text-neutral-900">Your Projects</h2>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    Live workspaces and scaffolded applications associated with your account
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveNav("Workspace")}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold shadow-xs transition active:scale-95 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>New Project</span>
+                </button>
+              </div>
+
+              {projectsList.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-neutral-200 rounded-2xl p-8">
+                  <FolderCode className="w-10 h-10 text-neutral-400 mx-auto mb-3" />
+                  <h3 className="text-sm font-semibold text-neutral-800">No projects yet</h3>
+                  <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
+                    Describe what you want to build in the Workspace to generate your first project.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveNav("Workspace")}
+                    className="mt-4 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-semibold hover:bg-black transition"
+                  >
+                    Go to Workspace
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {projectsList.map((p) => (
+                    <div
+                      key={p.projectId}
+                      onClick={() => {
+                        if (p.status === "draft") {
+                          router.push(`/project/${p.projectId}/onboarding`);
+                        } else {
+                          router.push(`/project/${p.projectId}/ide`);
+                        }
+                      }}
+                      className="group flex items-center justify-between p-4 rounded-xl border border-neutral-200 hover:border-orange-500/50 hover:bg-orange-50/10 transition bg-white shadow-2xs cursor-pointer"
+                    >
+                      <div className="space-y-1 min-w-0 pr-4">
+                        <div className="flex items-center gap-2.5">
+                          <span className="font-semibold text-sm text-neutral-900 group-hover:text-orange-950 transition">
+                            {p.projectName}
+                          </span>
+                          <span
+                            className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase ${p.status === "draft"
+                              ? "bg-amber-100 text-amber-800 border border-amber-200"
+                              : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                              }`}
+                          >
+                            {p.status || "ready"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-500 line-clamp-1">{p.description || "No description"}</p>
+                        <div className="flex items-center gap-3 text-[11px] font-mono text-neutral-400">
+                          <span>Stack: {p.frontend || "React"} + {p.backend || "Express"}</span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {new Date(p.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteProject(e, p.projectId)}
+                          className="p-1.5 rounded text-neutral-300 hover:text-red-600 transition"
+                          title="Delete project"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <span className="px-3 py-1.5 rounded-lg bg-neutral-900 text-white group-hover:bg-orange-600 text-xs font-semibold transition flex items-center gap-1">
+                          <span>{p.status === "draft" ? "Onboarding" : "Open IDE"}</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : chat.messages.length === 0 ? (
+            /* STAGE D: NEW USER / EMPTY WORKSPACE: FOLDER + HEADING POP-UP */
+            <div className="flex-1 flex flex-col items-center justify-center p-6 max-w-4xl mx-auto w-full select-none overflow-y-auto">
+              {/* Heading Pop-up */}
               <div
-                className="w-full min-h-[80px] flex flex-col items-center justify-center mb-16 select-none z-10"
                 onMouseEnter={() => setHeadingHovered(true)}
                 onMouseLeave={() => setHeadingHovered(false)}
+                className="flex flex-col items-center justify-center my-6 cursor-default"
               >
                 <div
-                  className={`flex flex-col items-center text-center transition-all duration-500 transform ${
-                    isHeadingPopped
-                      ? "opacity-100 translate-y-0 scale-100 filter blur-0 pointer-events-auto"
-                      : "opacity-0 translate-y-6 scale-90 filter blur-[6px] pointer-events-none"
-                  }`}
+                  className={`flex flex-col items-center text-center transition-all duration-500 transform ${isHeadingPopped
+                    ? "opacity-100 translate-y-0 scale-100 filter blur-0 pointer-events-auto"
+                    : "opacity-0 translate-y-6 scale-90 filter blur-[6px] pointer-events-none"
+                    }`}
                   style={{
-                    transitionTimingFunction:
-                      "cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
                   }}
                 >
                   <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-neutral-900 drop-shadow-sm">
-                    What&apos;s on your mind today,{" "}
-                    <span className="text-[#5227FF]">{userName}</span>?
+                    What are we building today,{" "}
+                    <span className="text-[#5227FF]">
+                      {userName}
+                    </span>
+                    ?
                   </h1>
                 </div>
               </div>
@@ -493,198 +592,41 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            /* Active Conversation View: Welcome elements & folder disappear */
-            <div className="w-full max-w-3xl mx-auto flex flex-col space-y-4 py-8 px-2 animate-in fade-in duration-300">
-              {chatMessages.map((m, i) => (
-                <div
-                  key={i}
-                  className={`flex gap-3 ${
-                    m.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  {m.role === "ai" && (
-                    <div className="w-7 h-7 rounded-full bg-[#5227FF] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-sm">
-                      SP
-                    </div>
-                  )}
-                  <div
-                    className={`text-[13.5px] px-4 py-3 max-w-[85%] leading-relaxed shadow-sm ${
-                      m.role === "user"
-                        ? "bg-black text-white rounded-2xl rounded-tr-sm"
-                        : "bg-neutral-50 text-neutral-900 border border-black/5 rounded-2xl rounded-tl-sm"
-                    }`}
-                  >
-                    {m.text}
-                  </div>
-                </div>
-              ))}
+            /* CONVERSATION STREAMING */
+            <MessageList
+              messages={chat.messages}
+              isStreaming={chat.isStreaming}
+              isThinking={chat.isThinking}
+              onRegenerateLast={chat.regenerateLast}
+              onRetryLast={chat.retryLast}
+              onOpenIde={(pId) => router.push(`/project/${pId}/ide`)}
+            />
+          )}
 
-              {aiTyping && (
-                <div className="flex gap-3 items-center">
-                  <div className="w-7 h-7 rounded-full bg-[#5227FF] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">
-                    SP
-                  </div>
-                  <div className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-neutral-50 border border-black/5 text-neutral-500 text-xs shadow-sm">
-                    <span className="w-2 h-2 rounded-full bg-[#5227FF] animate-bounce" />
-                    <span className="w-2 h-2 rounded-full bg-[#5227FF] animate-bounce [animation-delay:150ms]" />
-                    <span className="w-2 h-2 rounded-full bg-[#5227FF] animate-bounce [animation-delay:300ms]" />
-                  </div>
-                </div>
-              )}
-
-              {/* Build Log Card if building */}
-              {overlayStep !== "idle" && (
-                <div className="w-full mt-4 rounded-2xl p-4 bg-neutral-900 text-white border border-neutral-800 shadow-lg">
-                  <div className="flex items-center gap-2 mb-2 text-xs font-medium">
-                    {overlayStep !== "done" ? (
-                      <Spinner />
-                    ) : (
-                      <span className="text-green-400">✓</span>
-                    )}
-                    <span>
-                      {overlayStep === "creating" &&
-                        "Creating project structure..."}
-                      {overlayStep === "logs" && "Scaffolding dependencies..."}
-                      {overlayStep === "done" &&
-                        "Project ready! Redirecting..."}
-                    </span>
-                  </div>
-                  <div className="space-y-0.5 max-h-48 overflow-y-auto text-xs font-mono">
-                    {logs.map((log, i) => (
-                      <LogLine key={i} text={log} i={i} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div ref={chatEndRef} className="h-4" />
-            </div>
+          {activeNav === "Workspace" && (
+            <ChatComposer
+              value={composerDraft}
+              onChange={setComposerDraft}
+              onSend={() => {
+                if (composerDraft.trim()) {
+                  handleLaunchProjectFromPrompt(composerDraft);
+                  setComposerDraft("");
+                }
+              }}
+              onStop={chat.stop}
+              isStreaming={chat.isStreaming}
+              models={DEFAULT_MODELS}
+              selectedModelId={selectedModel.id}
+              onModelChange={(mId) => {
+                const found = DEFAULT_MODELS.find((m) => m.id === mId);
+                if (found) setSelectedModel(found);
+              }}
+              modelName={selectedModel.label}
+              projectName={workspaceProject}
+            />
           )}
         </div>
-
-        {/* Docked Prompt Bar with Margin from Bottom */}
-        <div className="absolute bottom-10 left-0 right-0 z-30 flex justify-center px-4 pointer-events-none">
-          <div className="w-full max-w-4xl flex justify-center pointer-events-auto">
-            <PromptBar
-              placeholder="Ask anything or describe what to build..."
-              sources={[
-                {
-                  key: "files",
-                  name: "Photos & files",
-                  description: "Upload from this device",
-                  icon: Attachment01Icon,
-                  attach: true,
-                },
-                {
-                  key: "web",
-                  name: "Web search",
-                  description: "Live results",
-                  icon: Globe02Icon,
-                },
-              ]}
-              commands={[
-                {
-                  key: "summarize",
-                  name: "/summarize",
-                  description: "Digest the thread so far",
-                },
-              ]}
-              models={modelOptions}
-              defaultModel={catalog.defaultModelId}
-              efforts={["Low", "Medium", "High", "Extra", "Max"]}
-              busy={busy}
-              onSend={send}
-              onStop={() => {
-                ai.stop();
-                controller.current?.abort();
-              }}
-              onAttach={() => pickFiles()}
-              onDictate={() => transcribe()}
-              background="#18181b"
-              color="#f5f5f5"
-              menuBackground="#27272a"
-              sparkColor="#5227FF"
-              sparkBoost={1.2}
-              width={800}
-              radius={18}
-              maxRows={5}
-              morphDuration={240}
-              squash={0.12}
-              tilt={8}
-              pressScale={0.96}
-            />
-          </div>
-        </div>
       </main>
-
-      {/* ─── CREATE PROJECT MODAL ─── */}
-      {showModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-          onClick={() => setShowModal(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-3xl p-7 bg-white text-black shadow-2xl border border-black/10"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="text-lg font-bold text-black">
-                  Create New Project
-                </h2>
-                <p className="text-xs text-neutral-500 mt-0.5">
-                  StackPilot will scaffold it for you
-                </p>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:text-black hover:bg-neutral-100 transition"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                {
-                  label: "Project Name",
-                  placeholder: "my-awesome-app",
-                  setter: setProjectName,
-                },
-                {
-                  label: "Frontend Framework",
-                  placeholder: "react / next / vue",
-                  setter: setFrontendFramework,
-                },
-                {
-                  label: "Backend Framework",
-                  placeholder: "express / fastapi / django",
-                  setter: setBackendFramework,
-                },
-              ].map(({ label, placeholder, setter }) => (
-                <div key={label}>
-                  <label className="block text-[11px] font-semibold mb-1 uppercase tracking-wider text-neutral-500">
-                    {label}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={placeholder}
-                    onChange={(e) => setter(e.target.value)}
-                    className="w-full px-4 h-10 rounded-xl text-sm outline-none bg-neutral-50 border border-black/10 focus:border-black text-black transition placeholder:text-neutral-400"
-                  />
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={handleCreateProject}
-              className="w-full h-11 rounded-full text-sm font-semibold mt-6 bg-black text-white hover:bg-neutral-800 transition active:scale-[0.98]"
-            >
-              Create Project
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

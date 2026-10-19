@@ -26,6 +26,7 @@ export interface StaggeredMenuProps {
   className?: string;
   logoUrl?: string;
   userName?: string;
+  projectName?: string;
   menuButtonColor?: string;
   openMenuButtonColor?: string;
   accentColor?: string;
@@ -46,6 +47,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
   className,
   logoUrl = '',
   userName = '',
+  projectName = '',
   menuButtonColor = '#000',
   openMenuButtonColor = '#000',
   accentColor = '#5227FF',
@@ -495,7 +497,9 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
                 </div>
                 <div className="min-w-0">
                   <p className="text-[13px] font-semibold text-black truncate">{userName}</p>
-                  <p className="text-[11px] text-neutral-400">Workspace</p>
+                  <p className="text-[11px] text-neutral-400 truncate">
+                    Workspace {projectName ? <span className="text-[#5227FF] font-medium">• {projectName}</span> : null}
+                  </p>
                 </div>
               </div>
             )}

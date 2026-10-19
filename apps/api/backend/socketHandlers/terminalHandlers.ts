@@ -80,24 +80,62 @@ async function attachLocalShell(
 
   const hostPort = Number(process.env.PORT || 10000);
 
+
   ptyProcess.onData((data) => {
     socket.emit("shell-output", data);
 
-    // Auto-detect dev server port from terminal logs (e.g. Vite: "Local: http://localhost:5173/")
-    // Ignore error messages (such as EADDRINUSE) and never bind to host's own backend API port
-    const portMatch = data.match(/(?:http:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0):|(?:Local|Network):\s+http:\/\/[^:]+:)(\d{4,5})/i);
-    if (portMatch && portMatch[1]) {
-      const detectedPort = parseInt(portMatch[1], 10);
-      if (detectedPort !== hostPort && detectedPort !== 5000 && detectedPort !== 80) {
-        setProjectPort(projectId, detectedPort);
-        socket.emit("preview-ready", {
-          projectId,
-          port: detectedPort,
-          previewUrl,
-        });
-      }
+    // Strip ANSI escape sequences.
+    const cleanData = data.replace(
+      /\x1B(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1B\\))/g,
+      ""
+    );
+
+    // Don't register a port from a failed startup.
+    if (
+      /EADDRINUSE|address already in use|failed to start/i.test(cleanData)
+    ) {
+      return;
     }
+
+    // Detect common dev-server URL formats.
+    const portMatch = cleanData.match(
+      /https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::\]|[^/\s:]+):(\d{4,5})(?=[/\s]|$)/i
+    );
+
+    if (!portMatch?.[1]) return;
+
+    const detectedPort = Number(portMatch[1]);
+
+    // Ignore ports reserved for host/backend services.
+    if (
+      !Number.isInteger(detectedPort) ||
+      detectedPort < 1024 ||
+      detectedPort > 65535 ||
+      detectedPort === hostPort ||
+      detectedPort === 5000 ||
+      detectedPort === 3000 ||
+      detectedPort === 80
+    ) {
+      return;
+    }
+
+    setProjectPort(projectId, detectedPort);
+
+    // Get the URL AFTER updating the project's port.
+    const updatedPreviewUrl = getProjectPreviewUrl(projectId);
+
+    socket.emit("preview-ready", {
+      projectId,
+      port: detectedPort,
+      previewUrl: updatedPreviewUrl,
+    });
+
+    socket.emit("preview-url", {
+      projectId,
+      previewUrl: updatedPreviewUrl,
+    });
   });
+
 
   ptyProcess.onExit(() => {
     socket.emit("shell-output", "\r\n\x1b[90m[Process exited]\x1b[0m\r\n");

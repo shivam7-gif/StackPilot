@@ -1,145 +1,27 @@
 [
   {
-    "projectId": "768dbe95-de1c-42f7-bf51-1d5f778c5601",
-    "projectName": "shivam",
-    "baseName": "shivam",
-    "folderName": "768dbe95-de1c-42f7-bf51-1d5f778c5601",
-    "frontend": "react",
-    "backend": "express",
-    "createdAt": "2026-07-01T20:16:05.236Z"
-  },
-  {
-    "projectId": "62d8e1cd-61a6-4b9c-87bc-87d2c82b2cbd",
-    "projectName": "shivam",
-    "baseName": "shivam",
-    "folderName": "62d8e1cd-61a6-4b9c-87bc-87d2c82b2cbd",
-    "frontend": "react",
-    "backend": "express",
-    "createdAt": "2026-07-01T21:06:30.161Z"
-  },
-  {
-    "projectId": "b25b35b3-6d56-4f5c-b363-1609b8e6c9e3",
-    "projectName": "stackpilot-fallback",
-    "baseName": "stackpilot-fallback",
-    "folderName": "b25b35b3-6d56-4f5c-b363-1609b8e6c9e3",
-    "createdAt": "2026-07-01T22:03:00.138Z"
-  },
-  {
-    "projectId": "7e0c4a66-ad96-42ea-bbaf-819032d4d6d6",
-    "projectName": "stackpilot-fallback",
-    "baseName": "stackpilot-fallback",
-    "folderName": "7e0c4a66-ad96-42ea-bbaf-819032d4d6d6",
-    "createdAt": "2026-07-01T22:06:30.061Z"
-  },
-  {
-    "projectId": "2167b742-b2fd-4c20-a4a3-3c964c63211b",
-    "projectName": "todo-list-app",
-    "baseName": "todo-list-app",
-    "folderName": "2167b742-b2fd-4c20-a4a3-3c964c63211b",
-    "createdAt": "2026-07-01T22:10:49.631Z"
-  },
-  {
-    "projectId": "90bcdb35-05ba-4126-8b9c-b97337597167",
-    "projectName": "shivam",
-    "baseName": "shivam",
-    "folderName": "90bcdb35-05ba-4126-8b9c-b97337597167",
-    "frontend": "react",
-    "backend": "express",
-    "createdAt": "2026-07-01T22:19:57.937Z"
-  },
-  {
-    "projectId": "d327d1cd-fd15-485a-8894-dd15bb69d872",
-    "projectName": "naming",
-    "baseName": "naming",
-    "folderName": "d327d1cd-fd15-485a-8894-dd15bb69d872",
-    "frontend": "react",
-    "backend": "express",
-    "createdAt": "2026-07-21T06:08:33.983Z"
-  },
-  {
-    "projectId": "1280944b-9521-4354-8ce8-3bb307f4146f",
-    "projectName": "smart",
-    "baseName": "smart",
-    "folderName": "1280944b-9521-4354-8ce8-3bb307f4146f",
-    "frontend": "react",
-    "backend": "express",
-    "createdAt": "2026-07-21T06:58:35.069Z"
-  },
-  {
-    "projectId": "bb23c263-0672-4d9e-bb66-ef7877eafd76",
-    "projectName": "working",
-    "baseName": "working",
-    "folderName": "bb23c263-0672-4d9e-bb66-ef7877eafd76",
-    "frontend": "react",
-    "backend": "express",
-    "createdAt": "2026-09-09T08:50:42.401Z"
-  },
-  {
-    "projectId": "831cda5e-c509-4647-b8ab-56c69d4a2967",
-    "projectName": "naya",
-    "baseName": "naya",
-    "folderName": "831cda5e-c509-4647-b8ab-56c69d4a2967",
-    "frontend": "react",
-    "backend": "express",
-    "createdAt": "2026-09-15T19:25:27.440Z"
-  },
-  {
-    "projectId": "42bbe1d2-e6f5-43a4-8f20-f6f36222427a",
-    "projectName": "test-app",
-    "baseName": "test-app",
-    "folderName": "42bbe1d2-e6f5-43a4-8f20-f6f36222427a",
-    "createdAt": "2026-10-13T10:59:16.845Z"
-  },
-  {
-    "projectId": "7111201e-f4f1-4b2d-90a3-9b150e0a555d",
-    "projectName": "stackpilot-app",
-    "baseName": "stackpilot-app",
-    "folderName": "7111201e-f4f1-4b2d-90a3-9b150e0a555d",
-    "frontend": "react",
-    "backend": "express",
-    "createdAt": "2026-10-13T11:04:36.067Z"
-  },
-  {
-    "projectId": "8d97a3e1-d722-4a39-a12f-ed98d9ecb443",
-    "projectName": "stackpilot-app",
-    "baseName": "stackpilot-app",
-    "folderName": "8d97a3e1-d722-4a39-a12f-ed98d9ecb443",
-    "createdAt": "2026-10-13T11:04:41.888Z"
-  },
-  {
-    "projectId": "b099c784-12ac-4407-b0eb-274e858cc277",
+    "projectId": "7cf0bee0-af18-46b8-887b-d97d0506e661",
     "projectName": "web-application",
     "baseName": "web-application",
-    "folderName": "b099c784-12ac-4407-b0eb-274e858cc277",
-    "frontend": "react",
-    "backend": "nestjs",
-    "createdAt": "2026-10-13T11:11:38.665Z"
-  },
-  {
-    "projectId": "6136dd45-a417-403a-a268-a885f925278e",
-    "projectName": "web-application",
-    "baseName": "web-application",
-    "folderName": "6136dd45-a417-403a-a268-a885f925278e",
-    "frontend": "react",
-    "backend": "nestjs",
-    "createdAt": "2026-10-13T11:11:42.985Z"
-  },
-  {
-    "projectId": "f8977a09-18df-4628-a66e-013475094a77",
-    "projectName": "web-application",
-    "baseName": "web-application",
-    "folderName": "f8977a09-18df-4628-a66e-013475094a77",
-    "frontend": "react",
-    "backend": "nestjs",
-    "createdAt": "2026-10-13T11:32:54.370Z"
-  },
-  {
-    "projectId": "cf6669c5-71f3-447d-b015-62bbb0523c07",
-    "projectName": "work",
-    "baseName": "work",
-    "folderName": "cf6669c5-71f3-447d-b015-62bbb0523c07",
+    "folderName": "7cf0bee0-af18-46b8-887b-d97d0506e661",
+    "description": "create a todo app",
+    "prompt": "create a todo app",
+    "category": "Full-Stack Application",
+    "ownerId": "19a5eb5b-54fb-43dc-80fc-a48f74e3a995",
+    "status": "ready",
     "frontend": "react",
     "backend": "express",
-    "createdAt": "2026-10-13T11:34:22.188Z"
+    "database": "postgresql",
+    "language": "typescript",
+    "styling": "tailwind",
+    "libraries": [
+      "lucide-react",
+      "tailwindcss",
+      "axios",
+      "zod"
+    ],
+    "model": "deepseek/deepseek-v4.1-flash-1017",
+    "createdAt": "2026-10-19T11:01:09.911Z",
+    "updatedAt": "2026-10-19T11:02:55.525Z"
   }
 ]

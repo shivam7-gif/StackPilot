@@ -89,16 +89,23 @@ const runEngineWithSocket = async (
   let projectName = "stackpilot-project";
   let architecture: any = null;
 
-  if (resultLine) {
+  const finalResultLine = resultLine as string | null;
+  if (finalResultLine) {
     try {
-      const parsed = JSON.parse(resultLine);
+      let clean = finalResultLine.trim();
+      const firstBrace = clean.indexOf("{");
+      const lastBrace = clean.lastIndexOf("}");
+      if (firstBrace >= 0 && lastBrace > firstBrace) {
+        clean = clean.substring(firstBrace, lastBrace + 1);
+      }
+      const parsed = JSON.parse(clean);
       generatedFiles = parsed.files ?? [];
       projectName = parsed.projectName ?? projectName;
       architecture = parsed.architecture ?? null;
-    } catch {
+    } catch (e: any) {
       socket.emit(
         "engine-output",
-        "\n[stackpilot-ai] Could not parse engine result JSON.\n"
+        `\n[stackpilot-ai] Could not parse engine result JSON: ${e.message}\n`
       );
     }
   }
