@@ -23,5 +23,77 @@
     "model": "deepseek/deepseek-v4.1-flash-1017",
     "createdAt": "2026-10-19T11:01:09.911Z",
     "updatedAt": "2026-10-19T11:02:55.525Z"
+  },
+  {
+    "projectId": "670e16fd-65bb-4988-92c3-dc931825ade6",
+    "projectName": "web-application",
+    "baseName": "web-application",
+    "folderName": "670e16fd-65bb-4988-92c3-dc931825ade6",
+    "description": "create a 2d todo app",
+    "prompt": "create a 2d todo app",
+    "category": "Full-Stack Application",
+    "ownerId": "default-user",
+    "status": "ready",
+    "frontend": "react",
+    "backend": "express",
+    "database": "sqlite",
+    "language": "typescript",
+    "styling": "tailwindcss",
+    "libraries": [
+      "lucide-react",
+      "tailwindcss",
+      "axios"
+    ],
+    "model": "openrouter/free",
+    "createdAt": "2026-10-24T09:05:00.078Z",
+    "updatedAt": "2026-10-24T09:05:00.082Z"
+  },
+  {
+    "projectId": "0f0a031a-4ad7-49af-be9a-0ac37dfa99e9",
+    "projectName": "web-application",
+    "baseName": "web-application",
+    "folderName": "0f0a031a-4ad7-49af-be9a-0ac37dfa99e9",
+    "description": "Scaffold fullstack application named sherr with react frontend and express backend",
+    "prompt": "Scaffold fullstack application named sherr with react frontend and express backend",
+    "category": "Full-Stack Application",
+    "ownerId": "default-user",
+    "status": "ready",
+    "frontend": "react",
+    "backend": "express",
+    "database": "sqlite",
+    "language": "typescript",
+    "styling": "tailwindcss",
+    "libraries": [
+      "lucide-react",
+      "tailwindcss",
+      "axios"
+    ],
+    "model": "openrouter/free",
+    "createdAt": "2026-10-24T09:10:34.150Z",
+    "updatedAt": "2026-10-24T09:10:34.155Z"
+  },
+  {
+    "projectId": "ae487995-3a3f-457c-874c-91531eec1f97",
+    "projectName": "web-application",
+    "baseName": "sarsoo",
+    "folderName": "ae487995-3a3f-457c-874c-91531eec1f97",
+    "description": "Scaffold fullstack application named sarsoo with react frontend and express backend",
+    "prompt": "Scaffold fullstack application named sarsoo with react frontend and express backend",
+    "category": "Full-Stack Application",
+    "ownerId": "default-user",
+    "status": "ready",
+    "frontend": "react",
+    "backend": "express",
+    "database": "sqlite",
+    "language": "typescript",
+    "styling": "tailwindcss",
+    "libraries": [
+      "lucide-react",
+      "tailwindcss",
+      "axios"
+    ],
+    "model": "openrouter/free",
+    "createdAt": "2026-10-24T09:40:01.868Z",
+    "updatedAt": "2026-10-24T09:40:01.874Z"
   }
 ]

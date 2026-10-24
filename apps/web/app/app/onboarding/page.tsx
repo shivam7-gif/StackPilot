@@ -58,24 +58,10 @@ export default function OnboardingPage() {
   const { watch, trigger, getValues, reset } = form;
   const formData = watch();
 
-  // Guard: if already completed, navigate to dashboard
+  // Onboarding page bypassed: always redirect directly to dashboard
   useEffect(() => {
-    try {
-      const isCompleted = localStorage.getItem(COMPLETED_STORAGE_KEY);
-      if (isCompleted === "true") {
-        router.replace("/dashboard");
-        return;
-      }
-
-      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
-      if (savedDraft) {
-        const parsed = JSON.parse(savedDraft);
-        reset(parsed);
-      }
-    } catch {
-      // LocalStorage unavailable / SSR fallback
-    }
-  }, [router, reset]);
+    router.replace("/dashboard");
+  }, [router]);
 
   // Persist draft on every change
   useEffect(() => {

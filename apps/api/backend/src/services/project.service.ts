@@ -16,7 +16,8 @@ export type Framework =
   | "express"
   | "nestjs"
   | "django"
-  | "laravel";
+  | "laravel"
+  | "fastapi";
 
 export const PROJECTS_DIR = path.join(__dirname, "../../projects");
 
@@ -41,6 +42,7 @@ export const getScaffoldCommand = (
     astro: `npx create-astro@latest . --template minimal --no-install --no-git --yes`,
     express: `npx -y express-generator --no-view --force ${projectId}`,
     django: `django-admin startproject app .`,
+    fastapi: `echo fastapi`,
   };
 
   return { command: commands[framework], cwd };

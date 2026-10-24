@@ -81,6 +81,13 @@ export default function ProjectOnboardingPage({ params }: ProjectOnboardingPageP
     session?.user?.id ||
     (session?.user?.email ? encodeURIComponent(session.user.email) : "default-user");
 
+  // Project onboarding bypassed: redirect immediately to IDE
+  useEffect(() => {
+    if (id) {
+      router.replace(`/project/${id}/ide`);
+    }
+  }, [id, router]);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [loadingInitial, setLoadingInitial] = useState(true);
 

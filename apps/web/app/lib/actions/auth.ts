@@ -4,7 +4,7 @@ import { signIn, signOut } from "@/auth";
 
 export type OAuthProvider = "google" | "github";
 
-export async function signInWithProvider(provider: OAuthProvider, redirectTo: string = "/onboarding") {
+export async function signInWithProvider(provider: OAuthProvider, redirectTo: string = "/dashboard") {
   await signIn(provider, { redirectTo });
 }
 

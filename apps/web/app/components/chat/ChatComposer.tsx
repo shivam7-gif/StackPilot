@@ -114,13 +114,6 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                   <span className="truncate max-w-[150px]">{modelName}</span>
                 </span>
               )}
-
-              {projectName && (
-                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-mono text-neutral-500 bg-neutral-50 border border-neutral-200">
-                  <span>📁</span>
-                  <span className="truncate max-w-[130px]">{projectName}</span>
-                </span>
-              )}
             </div>
 
             {/* Right: Shortcut Hint & Action Button */}
